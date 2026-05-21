@@ -3909,8 +3909,8 @@ function getIndexHtml() {
             background-color: #495057; /* Darker progress bar background */
         }
         [data-bs-theme="dark"] .progress span { /* Text on progress bar */
-            color: #000000 !important; /* Black text for progress bars */
-            text-shadow: none; /* Remove shadow for black text or use a very light one if needed */
+            color: #ffffff !important; /* White text for progress bars in dark mode */
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Add shadow for readability */
         }
         [data-bs-theme="dark"] .footer.bg-light {
             background-color: #343a40 !important; /* Darker footer */
@@ -4287,8 +4287,8 @@ function getLoginHtml() {
             background-color: #495057; /* Darker progress bar background */
         }
         [data-bs-theme="dark"] .progress span { /* Text on progress bar */
-            color: #000000 !important; /* Black text for progress bars */
-            text-shadow: none; /* Remove shadow for black text or use a very light one if needed */
+            color: #ffffff !important; /* White text for progress bars in dark mode */
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Add shadow for readability */
         }
         [data-bs-theme="dark"] .footer.bg-light {
             background-color: #343a40 !important; /* Darker footer */
@@ -5039,8 +5039,46 @@ body {
 }
 
 .modal-content {
-    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white for light theme */
-    /* backdrop-filter: blur(5px); /* Optional: adds a blur effect to content behind modal */
+    background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent white for light theme */
+    border: 1px solid rgba(129, 151, 183, 0.2) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* 增强 Modal 遮罩层 */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Modal 标题样式增强 */
+.modal-header {
+    background: linear-gradient(to bottom, rgba(248, 250, 252, 0.8), transparent);
+    border-bottom: 2px solid var(--apple-line, rgba(129, 151, 183, 0.15)) !important;
+    border-radius: 19px 19px 0 0 !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
+.modal-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: var(--apple-text) !important;
+}
+
+/* Modal 内容区域 */
+.modal-body {
+    padding: 1.5rem !important;
+}
+
+/* Modal 底部按钮区 */
+.modal-footer {
+    border-top: 1px solid var(--apple-line, rgba(129, 151, 183, 0.15)) !important;
+    padding: 1rem 1.5rem !important;
+    background: rgba(248, 250, 252, 0.3);
+    border-radius: 0 0 19px 19px !important;
 }
 
 
@@ -5718,16 +5756,37 @@ body {
         }
 
         .modal-content {
-            background-color: #343a40; /* Dark grey for dark theme */
+            background-color: rgba(35, 42, 55, 0.95) !important;
             color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
         }
 
         .modal-header {
-            border-bottom-color: #495057;
+            background: linear-gradient(to bottom, rgba(45, 55, 72, 0.8), transparent);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 19px 19px 0 0 !important;
+            padding: 1.25rem 1.5rem !important;
+        }
+
+        .modal-title {
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
+            color: #f1f5f9 !important;
+        }
+
+        .modal-body {
+            padding: 1.5rem !important;
         }
 
         .modal-footer {
-            border-top-color: #495057;
+            border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            padding: 1rem 1.5rem !important;
+            background: rgba(30, 35, 45, 0.4);
+            border-radius: 0 0 19px 19px !important;
         }
 
         .form-control {
@@ -7357,7 +7416,7 @@ body {
 .admin-shell {
     max-width: 1180px;
     padding-top: 3.5rem;
-    padding-bottom: 3.5rem;
+    padding-bottom: 10.5rem;
 }
 
 .dashboard-stack {
@@ -7822,76 +7881,6 @@ body.custom-background-enabled .login-card {
     border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-body.custom-background-enabled {
-    --surface-alpha: calc(0.32 + (var(--page-opacity, 0.8) * 0.34));
-    --background-dim: 0.14;
-    background: transparent !important;
-    position: relative;
-}
-
-body.custom-background-enabled::before {
-    z-index: -2 !important;
-    opacity: 1 !important;
-    filter: none !important;
-}
-
-body.custom-background-enabled::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background: rgba(246, 249, 255, var(--background-dim));
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled {
-    --background-dim: 0.2;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled::after {
-    background: rgba(0, 0, 0, var(--background-dim));
-}
-
-body.custom-background-enabled .navbar {
-    background: rgba(255, 255, 255, var(--surface-alpha)) !important;
-    backdrop-filter: saturate(180%) blur(24px);
-    -webkit-backdrop-filter: saturate(180%) blur(24px);
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background: rgba(4, 4, 5, var(--surface-alpha)) !important;
-}
-
-body.custom-background-enabled .card,
-body.custom-background-enabled .modal-content,
-body.custom-background-enabled .table-responsive,
-body.custom-background-enabled .mobile-server-card,
-body.custom-background-enabled .mobile-site-card {
-    background: rgba(255, 255, 255, var(--surface-alpha)) !important;
-    border-color: rgba(255, 255, 255, 0.42) !important;
-    backdrop-filter: saturate(170%) blur(22px);
-    -webkit-backdrop-filter: saturate(170%) blur(22px);
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .card,
-[data-bs-theme="dark"] body.custom-background-enabled .modal-content,
-[data-bs-theme="dark"] body.custom-background-enabled .table-responsive,
-[data-bs-theme="dark"] body.custom-background-enabled .mobile-server-card,
-[data-bs-theme="dark"] body.custom-background-enabled .mobile-site-card {
-    background: rgba(6, 6, 7, var(--surface-alpha)) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-body.custom-background-enabled .form-control,
-body.custom-background-enabled .form-select {
-    background: rgba(255, 255, 255, calc(var(--surface-alpha) + 0.12)) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .form-control,
-[data-bs-theme="dark"] body.custom-background-enabled .form-select {
-    background: rgba(20, 20, 22, calc(var(--surface-alpha) + 0.12)) !important;
-}
-
 .app-footer .text-muted,
 .footer.fixed-bottom .text-muted {
     color: var(--apple-muted) !important;
@@ -7967,12 +7956,6 @@ body.custom-background-enabled .form-select {
 [data-bs-theme="dark"] .table-hover > tbody > tr:hover > td.empty-table-cell {
     color: #a1a1aa !important;
     background: rgba(18, 18, 20, 0.72) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .navbar,
-[data-bs-theme="dark"] body.custom-background-enabled .app-footer,
-[data-bs-theme="dark"] body.custom-background-enabled .footer.fixed-bottom {
-    background: rgba(3, 3, 3, var(--surface-alpha)) !important;
 }
 
 
@@ -11293,10 +11276,18 @@ function updateOpacityPreview() {
     // 更新显示的数值
     document.getElementById('opacityValue').textContent = opacity;
 
-    // 实时预览（不保存）
-    if (enabled && url) {
-        document.body.style.setProperty('--page-opacity', opacity / 100);
+    // 无论是否启用背景图，都实时更新透明度变量
+    document.body.style.setProperty('--page-opacity', opacity / 100);
 
+    // 如果启用了背景图且有URL，确保应用背景
+    if (enabled && url) {
+        if (!document.body.classList.contains('custom-background-enabled')) {
+            applyBackgroundSettings(enabled, url, opacity, false);
+        }
+    } else if (!enabled) {
+        // 如果没有启用，移除背景但保留透明度设置（用于其他元素）
+        document.body.classList.remove('custom-background-enabled');
+        document.body.style.setProperty('--page-opacity', opacity / 100);
     }
 }
 
