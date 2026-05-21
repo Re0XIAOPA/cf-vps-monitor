@@ -5305,11 +5305,11 @@ hr.my-4 {
 }
 
 [data-bs-theme="dark"] .card-title {
-    color: #60a5fa;
+    color: #e2e8f0;
 }
 
 [data-bs-theme="dark"] .card-title i {
-    color: #60a5fa;
+    color: #94a3b8;
 }
 
 /* VPS监控面板标题 - 蓝色加粗 */
@@ -5715,15 +5715,15 @@ body {
         }
 
         .card {
-            background-color: #343a40; /* Card dark background */
-            border: 1px solid #495057;
-            color: #f8f9fa; /* Card text color */
+            background-color: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
         }
 
         .card-header {
-            background-color: #495057;
-            border-bottom: 1px solid #5b6167;
-            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
         }
 
         .table {
@@ -6386,8 +6386,42 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
     background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
+/* 覆盖使用CSS变量的元素 - 确保背景图能显示 */
+body.custom-background-enabled .navbar {
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+}
 
+[data-bs-theme="dark"] body.custom-background-enabled .navbar {
+    background: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+}
 
+body.custom-background-enabled .card.shadow-sm {
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .card.shadow-sm {
+    background: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+}
+
+body.custom-background-enabled .footer.fixed-bottom {
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .footer.fixed-bottom {
+    background: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+}
+
+body.custom-background-enabled .table-responsive {
+    background: transparent !important;
+}
+
+body.custom-background-enabled .form-control {
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.6 + 0.3)) !important;
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .form-control {
+    background: rgba(30, 37, 50, calc(var(--page-opacity) * 0.5 + 0.3)) !important;
+}
 
 
 /* 警告框透明度调整 */
