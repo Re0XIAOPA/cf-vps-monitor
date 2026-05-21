@@ -4040,9 +4040,7 @@ function getIndexHtml() {
 
     <main class="container monitor-shell">
     <!-- 单一主卡片容器 -->
-    <div id="statusDashboardCard" class="d-none">
-        <div class="card shadow-sm">
-            <div class="card-body">
+    <div id="statusDashboardCard" class="dashboard-stack d-none">
                 <!-- 服务器监控部分 -->
                 <section id="serverStatusSection" class="dashboard-section mb-4 d-none">
                     <h5 class="card-title mb-3">
@@ -4054,7 +4052,7 @@ function getIndexHtml() {
                     </div>
 
                     <!-- 桌面端表格视图 -->
-                    <div class="table-responsive">
+                    <div class="table-responsive desktop-table-view">
                         <table class="table table-striped table-hover align-middle">
                             <thead>
                                 <tr>
@@ -4080,7 +4078,7 @@ function getIndexHtml() {
                     </div>
 
                     <!-- 移动端卡片视图 -->
-                    <div class="mobile-card-container" id="mobileServerContainer">
+                    <div class="mobile-card-container mobile-only-view" id="mobileServerContainer">
                         <div class="text-center p-3">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">加载中...</span>
@@ -4104,7 +4102,7 @@ function getIndexHtml() {
                     </div>
 
                     <!-- 桌面端表格视图 -->
-                    <div class="table-responsive">
+                    <div class="table-responsive desktop-table-view">
                         <table class="table table-striped table-hover align-middle">
                             <thead>
                                 <tr>
@@ -4125,7 +4123,7 @@ function getIndexHtml() {
                     </div>
 
                     <!-- 移动端卡片视图 -->
-                    <div class="mobile-card-container" id="mobileSiteContainer">
+                    <div class="mobile-card-container mobile-only-view" id="mobileSiteContainer">
                         <div class="text-center p-3">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">加载中...</span>
@@ -4134,8 +4132,6 @@ function getIndexHtml() {
                         </div>
                     </div>
                 </section>
-            </div>
-        </div>
     </div>
     </main>
     <!-- End Website Status Section -->
@@ -7192,9 +7188,9 @@ body {
 }
 
 [data-bs-theme="dark"] {
-    --apple-glass: rgba(8, 8, 9, 0.82);
-    --apple-glass-strong: rgba(16, 16, 18, 0.92);
-    --apple-glass-border: rgba(255, 255, 255, 0.08);
+    --apple-glass: rgba(7, 7, 8, 0.86);
+    --apple-glass-strong: rgba(12, 12, 13, 0.94);
+    --apple-glass-border: rgba(255, 255, 255, 0.07);
     --apple-line: rgba(255, 255, 255, 0.1);
     --apple-text: #f8fafc;
     --apple-muted: #a1a1aa;
@@ -7209,7 +7205,7 @@ body {
 }
 
 [data-bs-theme="dark"] body {
-    background: #050505 !important;
+    background: #030303 !important;
 }
 
 body {
@@ -7233,8 +7229,8 @@ body {
 }
 
 [data-bs-theme="dark"] .navbar {
-    background: rgba(14, 14, 15, 0.86) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    background: rgba(5, 5, 6, 0.9) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 .navbar .container {
@@ -7352,7 +7348,7 @@ body {
 
 [data-bs-theme="dark"] .navbar .btn-outline-light,
 [data-bs-theme="dark"] .navbar .nav-link {
-    background: rgba(24, 24, 27, 0.82) !important;
+    background: rgba(14, 14, 16, 0.9) !important;
     border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
@@ -7369,6 +7365,34 @@ body {
     padding-top: 2.25rem;
 }
 
+.dashboard-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+}
+
+.dashboard-stack .dashboard-section {
+    padding: 0;
+}
+
+.dashboard-stack #statusSectionDivider {
+    margin: 0 !important;
+}
+
+.mobile-only-view {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .desktop-table-view {
+        display: none !important;
+    }
+
+    .mobile-only-view {
+        display: block !important;
+    }
+}
+
 .card.shadow-sm {
     border: 1px solid var(--apple-glass-border) !important;
     border-radius: 28px !important;
@@ -7379,7 +7403,7 @@ body {
 }
 
 [data-bs-theme="dark"] .card.shadow-sm {
-    background: rgba(8, 8, 9, 0.84) !important;
+    background: rgba(6, 6, 7, 0.88) !important;
     border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
@@ -7418,7 +7442,7 @@ body {
 
 [data-bs-theme="dark"] .alert-info {
     border-color: rgba(255, 255, 255, 0.08) !important;
-    background: rgba(20, 20, 22, 0.94) !important;
+    background: rgba(10, 10, 11, 0.96) !important;
     color: #d4d4d8 !important;
 }
 
@@ -7451,7 +7475,7 @@ body {
 }
 
 [data-bs-theme="dark"] .table-responsive {
-    background: rgba(14, 14, 16, 0.92) !important;
+    background: rgba(10, 10, 11, 0.94) !important;
     border-color: rgba(255, 255, 255, 0.08) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), var(--apple-shadow-soft);
 }
@@ -7462,7 +7486,7 @@ body {
 }
 
 [data-bs-theme="dark"] .table thead th {
-    background: rgba(24, 24, 27, 0.92) !important;
+    background: rgba(15, 15, 17, 0.95) !important;
     color: #a1a1aa !important;
 }
 
@@ -7630,8 +7654,17 @@ body {
     background: rgba(129, 151, 183, 0.18) !important;
 }
 
-.progress-bar {
-    background: linear-gradient(90deg, var(--apple-blue-2), var(--apple-blue)) !important;
+.progress-bar.bg-light-green,
+.progress-bar.bg-success {
+    background: linear-gradient(90deg, #22c55e, var(--apple-green)) !important;
+}
+
+.progress-bar.bg-warning {
+    background: linear-gradient(90deg, #f59e0b, var(--apple-yellow)) !important;
+}
+
+.progress-bar.bg-danger {
+    background: linear-gradient(90deg, #ef4444, var(--apple-red)) !important;
 }
 
 .badge.bg-success { background-color: var(--apple-green) !important; }
@@ -7639,30 +7672,35 @@ body {
 .badge.bg-danger { background-color: var(--apple-red) !important; }
 
 .history-bar-container {
-    height: 20px !important;
-    gap: 3px !important;
-    background: rgba(129, 151, 183, 0.1) !important;
+    height: 22px !important;
+    gap: 4px !important;
+    background: transparent !important;
     border: 0 !important;
-    border-radius: 999px !important;
-    padding: 3px !important;
-    transition: background-color 0.16s ease, box-shadow 0.16s ease;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
 }
 
 .history-bar-container:hover {
-    background: rgba(129, 151, 183, 0.18) !important;
-    box-shadow: inset 0 0 0 1px rgba(129, 151, 183, 0.16);
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 .history-bar {
-    width: 7px !important;
+    width: 8px !important;
+    height: 18px !important;
     border-radius: 999px !important;
     opacity: 0.95;
-    transition: transform 0.14s ease, opacity 0.14s ease;
+    cursor: default;
+    transform-origin: center;
+    transition: transform 0.18s cubic-bezier(.2,.8,.2,1), opacity 0.18s ease, box-shadow 0.18s ease;
 }
 
 .history-bar:hover {
-    transform: scaleY(1.25);
+    transform: scale(1.38);
     opacity: 1;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    z-index: 2;
 }
 
 .history-bar-up { background-color: var(--apple-green) !important; }
@@ -7670,13 +7708,60 @@ body {
 .history-bar-down { background-color: var(--apple-red) !important; }
 .history-bar-pending { background-color: rgba(129, 151, 183, 0.48) !important; }
 
+.history-tooltip {
+    position: fixed;
+    z-index: 9999;
+    max-width: 260px;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    border-radius: 14px;
+    color: var(--apple-text);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 42px rgba(31, 41, 55, 0.16);
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.45;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.96);
+    transition: opacity 0.14s ease, transform 0.14s cubic-bezier(.2,.8,.2,1);
+}
+
+.history-tooltip.show {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1);
+}
+
+[data-bs-theme="dark"] .history-tooltip {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f4f4f5;
+    background: rgba(24, 24, 27, 0.94);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+}
+
 .empty-table-cell {
     padding: 1.2rem !important;
     color: var(--apple-muted) !important;
     font-weight: 700 !important;
 }
 
+.table tbody td.empty-table-cell,
+.table-striped > tbody > tr > td.empty-table-cell,
+.table-hover > tbody > tr:hover > td.empty-table-cell {
+    color: var(--apple-muted) !important;
+    background: transparent !important;
+}
+
 [data-bs-theme="dark"] .empty-table-cell {
+    color: #d4d4d8 !important;
+    background: rgba(24, 24, 27, 0.82) !important;
+}
+
+[data-bs-theme="dark"] .table tbody td.empty-table-cell,
+[data-bs-theme="dark"] .table-striped > tbody > tr > td.empty-table-cell,
+[data-bs-theme="dark"] .table-hover > tbody > tr:hover > td.empty-table-cell {
     color: #d4d4d8 !important;
     background: rgba(24, 24, 27, 0.82) !important;
 }
@@ -7702,6 +7787,76 @@ body {
 [data-bs-theme="dark"] .footer.fixed-bottom {
     background: rgba(14, 14, 15, 0.92) !important;
     border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.custom-background-enabled {
+    --surface-alpha: calc(0.32 + (var(--page-opacity, 0.8) * 0.34));
+    --background-dim: 0.14;
+    background: transparent !important;
+    position: relative;
+}
+
+body.custom-background-enabled::before {
+    z-index: -2 !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+body.custom-background-enabled::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: rgba(246, 249, 255, var(--background-dim));
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled {
+    --background-dim: 0.2;
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled::after {
+    background: rgba(0, 0, 0, var(--background-dim));
+}
+
+body.custom-background-enabled .navbar {
+    background: rgba(255, 255, 255, var(--surface-alpha)) !important;
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .navbar {
+    background: rgba(4, 4, 5, var(--surface-alpha)) !important;
+}
+
+body.custom-background-enabled .card,
+body.custom-background-enabled .modal-content,
+body.custom-background-enabled .table-responsive,
+body.custom-background-enabled .mobile-server-card,
+body.custom-background-enabled .mobile-site-card {
+    background: rgba(255, 255, 255, var(--surface-alpha)) !important;
+    border-color: rgba(255, 255, 255, 0.42) !important;
+    backdrop-filter: saturate(170%) blur(22px);
+    -webkit-backdrop-filter: saturate(170%) blur(22px);
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .card,
+[data-bs-theme="dark"] body.custom-background-enabled .modal-content,
+[data-bs-theme="dark"] body.custom-background-enabled .table-responsive,
+[data-bs-theme="dark"] body.custom-background-enabled .mobile-server-card,
+[data-bs-theme="dark"] body.custom-background-enabled .mobile-site-card {
+    background: rgba(6, 6, 7, var(--surface-alpha)) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.custom-background-enabled .form-control,
+body.custom-background-enabled .form-select {
+    background: rgba(255, 255, 255, calc(var(--surface-alpha) + 0.12)) !important;
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .form-control,
+[data-bs-theme="dark"] body.custom-background-enabled .form-select {
+    background: rgba(20, 20, 22, calc(var(--surface-alpha) + 0.12)) !important;
 }
 
 .app-footer .text-muted,
@@ -7754,6 +7909,43 @@ body {
     }
 }
 
+.table tbody td.empty-table-cell,
+.table-striped > tbody > tr > td.empty-table-cell,
+.table-hover > tbody > tr:hover > td.empty-table-cell {
+    color: #667085 !important;
+    background: transparent !important;
+}
+
+[data-bs-theme="dark"] body {
+    background: #030303 !important;
+}
+
+[data-bs-theme="dark"] .navbar,
+[data-bs-theme="dark"] .app-footer,
+[data-bs-theme="dark"] .footer.fixed-bottom {
+    background: #030303 !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-bs-theme="dark"] .navbar .container,
+[data-bs-theme="dark"] .app-footer .container,
+[data-bs-theme="dark"] .footer.fixed-bottom .container {
+    background: transparent !important;
+}
+
+[data-bs-theme="dark"] .table tbody td.empty-table-cell,
+[data-bs-theme="dark"] .table-striped > tbody > tr > td.empty-table-cell,
+[data-bs-theme="dark"] .table-hover > tbody > tr:hover > td.empty-table-cell {
+    color: #a1a1aa !important;
+    background: rgba(18, 18, 20, 0.72) !important;
+}
+
+[data-bs-theme="dark"] body.custom-background-enabled .navbar,
+[data-bs-theme="dark"] body.custom-background-enabled .app-footer,
+[data-bs-theme="dark"] body.custom-background-enabled .footer.fixed-bottom {
+    background: rgba(3, 3, 3, var(--surface-alpha)) !important;
+}
+
 
 `;
 }
@@ -7766,6 +7958,8 @@ let vpsUpdateInterval = null;
 let siteUpdateInterval = null;
 let serverDataCache = {}; // Cache server data to avoid re-fetching for details
 let vpsStatusCache = {}; // 用于跟踪VPS状态变化
+let lastServerRenderSignature = '';
+let lastSiteRenderSignature = '';
 let publicDisplaySettings = {
     showServerSection: true,
     showSiteSection: true
@@ -8245,6 +8439,9 @@ async function loadAllServerStatuses() {
         await checkVpsStatusChanges(allStatuses);
 
         // 3. Render the table using DOM manipulation
+        const nextServerSignature = JSON.stringify(allStatuses);
+        if (nextServerSignature === lastServerRenderSignature) return;
+        lastServerRenderSignature = nextServerSignature;
         renderServerTable(allStatuses);
 
     } catch (error) {
@@ -8304,6 +8501,10 @@ function getServerStatusBadge(status) {
 function renderMobileServerCards(allStatuses) {
     const mobileContainer = document.getElementById('mobileServerContainer');
     if (!mobileContainer) return;
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+        mobileContainer.innerHTML = '';
+        return;
+    }
 
     mobileContainer.innerHTML = '';
 
@@ -8456,6 +8657,10 @@ function renderMobileServerCards(allStatuses) {
 function renderMobileSiteCards(sites) {
     const mobileContainer = document.getElementById('mobileSiteContainer');
     if (!mobileContainer) return;
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+        mobileContainer.innerHTML = '';
+        return;
+    }
 
     mobileContainer.innerHTML = '';
 
@@ -8738,6 +8943,9 @@ async function loadAllSiteStatuses() {
             noSitesAlert.classList.add('d-none');
         }
 
+        const nextSiteSignature = JSON.stringify(sites);
+        if (nextSiteSignature === lastSiteRenderSignature) return;
+        lastSiteRenderSignature = nextSiteSignature;
         renderSiteStatusTable(sites);
 
     } catch (error) {
@@ -8817,10 +9025,55 @@ function renderSiteHistoryBar(containerElement, history) {
             titleText = \`\${recordDate.toLocaleString()}: \${recordForHour.status} (\${recordForHour.status_code || 'N/A'}), \${recordForHour.response_time_ms || '-'}ms\`;
         }
 
-        historyHtml += \`<div class="history-bar \${barClass}" title="\${titleText}"></div>\`;
+        historyHtml += \`<div class="history-bar \${barClass}" data-history-title="\${escapeHtml(titleText)}" aria-label="\${escapeHtml(titleText)}"></div>\`;
     }
 
     containerElement.innerHTML = historyHtml;
+    attachHistoryTooltipHandlers(containerElement);
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function getHistoryTooltip() {
+    let tooltip = document.getElementById('historyTooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'historyTooltip';
+        tooltip.className = 'history-tooltip';
+        document.body.appendChild(tooltip);
+    }
+    return tooltip;
+}
+
+function positionHistoryTooltip(target, tooltip) {
+    const rect = target.getBoundingClientRect();
+    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+    tooltip.style.top = rect.top + 'px';
+}
+
+function attachHistoryTooltipHandlers(containerElement) {
+    containerElement.querySelectorAll('.history-bar').forEach(bar => {
+        bar.addEventListener('mouseenter', () => {
+            const tooltip = getHistoryTooltip();
+            tooltip.textContent = bar.dataset.historyTitle || '';
+            positionHistoryTooltip(bar, tooltip);
+            tooltip.classList.add('show');
+        });
+        bar.addEventListener('mousemove', () => {
+            const tooltip = getHistoryTooltip();
+            positionHistoryTooltip(bar, tooltip);
+        });
+        bar.addEventListener('mouseleave', () => {
+            const tooltip = getHistoryTooltip();
+            tooltip.classList.remove('show');
+        });
+    });
 }
 
 
