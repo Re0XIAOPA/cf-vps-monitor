@@ -7174,6 +7174,280 @@ body {
     }
 }
 
+/* ==================== Apple glassmorphism polish ==================== */
+:root {
+    --apple-bg: #f6f9ff;
+    --apple-glass: rgba(255, 255, 255, 0.66);
+    --apple-glass-strong: rgba(255, 255, 255, 0.82);
+    --apple-glass-border: rgba(255, 255, 255, 0.72);
+    --apple-line: rgba(129, 151, 183, 0.22);
+    --apple-text: #0f172a;
+    --apple-muted: #667085;
+    --apple-blue: #007aff;
+    --apple-blue-2: #5ac8fa;
+    --apple-purple: #5856d6;
+    --apple-green: #34c759;
+    --apple-yellow: #ffcc00;
+    --apple-red: #ff3b30;
+    --apple-shadow: 0 24px 70px rgba(31, 41, 55, 0.12);
+    --apple-shadow-soft: 0 12px 36px rgba(31, 41, 55, 0.08);
+}
+
+[data-bs-theme="dark"] {
+    --apple-glass: rgba(15, 23, 42, 0.64);
+    --apple-glass-strong: rgba(17, 24, 39, 0.78);
+    --apple-glass-border: rgba(255, 255, 255, 0.12);
+    --apple-line: rgba(226, 232, 240, 0.14);
+    --apple-text: #f8fafc;
+    --apple-muted: #cbd5e1;
+    --apple-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+    --apple-shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.24);
+}
+
+html,
+body {
+    background: linear-gradient(135deg, rgba(245, 249, 255, 0.98) 0%, rgba(238, 246, 255, 0.96) 44%, rgba(250, 248, 255, 0.98) 100%) !important;
+    color: var(--apple-text) !important;
+}
+
+[data-bs-theme="dark"] body {
+    background: linear-gradient(135deg, rgba(11, 18, 32, 0.98) 0%, rgba(15, 23, 42, 0.96) 48%, rgba(24, 22, 45, 0.98) 100%) !important;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    letter-spacing: 0;
+    padding-bottom: 0 !important;
+}
+
+.navbar {
+    height: auto !important;
+    min-height: 68px !important;
+    background: rgba(255, 255, 255, 0.56) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 1px 0 rgba(129, 151, 183, 0.12);
+    backdrop-filter: saturate(180%) blur(28px);
+    -webkit-backdrop-filter: saturate(180%) blur(28px);
+}
+
+[data-bs-theme="light"] .navbar {
+    background: rgba(255, 255, 255, 0.56) !important;
+}
+
+[data-bs-theme="dark"] .navbar {
+    background: rgba(15, 23, 42, 0.62) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.navbar .container {
+    min-height: 68px !important;
+}
+
+.navbar-brand {
+    color: var(--apple-text) !important;
+    font-weight: 800 !important;
+}
+
+.navbar-brand svg {
+    width: 34px;
+    height: 34px;
+    filter: drop-shadow(0 10px 24px rgba(0, 122, 255, 0.22));
+}
+
+.navbar .btn-outline-light,
+.navbar .nav-link {
+    min-height: 38px;
+    border: 1px solid var(--apple-glass-border) !important;
+    border-radius: 999px !important;
+    color: var(--apple-text) !important;
+    background: rgba(255, 255, 255, 0.64) !important;
+    box-shadow: 0 8px 24px rgba(31, 41, 55, 0.07);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+[data-bs-theme="dark"] .navbar .btn-outline-light,
+[data-bs-theme="dark"] .navbar .nav-link {
+    background: rgba(15, 23, 42, 0.58) !important;
+}
+
+.navbar .btn-outline-light:hover,
+.navbar .nav-link:hover {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple)) !important;
+    border-color: transparent !important;
+}
+
+.monitor-shell,
+.admin-shell {
+    max-width: 1180px;
+    padding-top: 2.25rem;
+}
+
+.card.shadow-sm {
+    border: 1px solid var(--apple-glass-border) !important;
+    border-radius: 28px !important;
+    background: var(--apple-glass) !important;
+    box-shadow: var(--apple-shadow) !important;
+    backdrop-filter: saturate(180%) blur(32px);
+    -webkit-backdrop-filter: saturate(180%) blur(32px);
+}
+
+.card-body {
+    padding: 1.35rem !important;
+}
+
+.card-title {
+    color: var(--apple-text) !important;
+    font-size: 1.2rem !important;
+    font-weight: 800 !important;
+}
+
+.card-title i {
+    width: 36px;
+    height: 36px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72) !important;
+    color: var(--apple-blue) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 26px rgba(0, 122, 255, 0.12);
+}
+
+.table-responsive {
+    border: 1px solid var(--apple-line) !important;
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--apple-shadow-soft);
+    backdrop-filter: saturate(160%) blur(22px);
+    -webkit-backdrop-filter: saturate(160%) blur(22px);
+}
+
+.table {
+    color: var(--apple-text) !important;
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.28);
+    --bs-table-hover-bg: rgba(0, 122, 255, 0.08);
+}
+
+.table thead th {
+    background: rgba(248, 251, 255, 0.74) !important;
+    color: var(--apple-muted) !important;
+    border-bottom: 1px solid var(--apple-line) !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+}
+
+.table td {
+    border-color: rgba(129, 151, 183, 0.14) !important;
+}
+
+.btn {
+    border-radius: 999px !important;
+    font-weight: 800 !important;
+}
+
+.btn-primary,
+.btn-success,
+.btn-info {
+    background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple)) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 12px 30px rgba(0, 122, 255, 0.22);
+}
+
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-danger {
+    background: rgba(255, 255, 255, 0.56) !important;
+    border: 1px solid var(--apple-line) !important;
+    color: var(--apple-text) !important;
+    box-shadow: 0 8px 22px rgba(31, 41, 55, 0.06);
+}
+
+.form-control,
+.form-select,
+.input-group .form-control {
+    border-radius: 16px !important;
+    border: 1px solid var(--apple-line) !important;
+    background: rgba(255, 255, 255, 0.62) !important;
+    color: var(--apple-text) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.section-display-switch .form-check {
+    border: 1px solid var(--apple-line) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.48) !important;
+    color: var(--apple-muted);
+}
+
+.form-check-input:checked {
+    background-color: var(--apple-green) !important;
+    border-color: var(--apple-green) !important;
+}
+
+.progress {
+    min-width: 86px;
+    background: rgba(129, 151, 183, 0.18) !important;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, var(--apple-blue-2), var(--apple-blue)) !important;
+}
+
+.badge.bg-success { background-color: var(--apple-green) !important; }
+.badge.bg-warning { background-color: var(--apple-yellow) !important; }
+.badge.bg-danger { background-color: var(--apple-red) !important; }
+
+.history-bar-container {
+    background: rgba(255, 255, 255, 0.46) !important;
+    border: 1px solid var(--apple-line);
+    border-radius: 12px !important;
+    padding: 4px !important;
+}
+
+.history-bar-up { background-color: var(--apple-green) !important; }
+.history-bar-warning { background-color: var(--apple-yellow) !important; }
+.history-bar-down { background-color: var(--apple-red) !important; }
+.history-bar-pending { background-color: rgba(129, 151, 183, 0.48) !important; }
+
+.mobile-server-card,
+.mobile-site-card {
+    border: 1px solid var(--apple-glass-border) !important;
+    border-radius: 24px !important;
+    background: var(--apple-glass-strong) !important;
+    box-shadow: var(--apple-shadow-soft) !important;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+}
+
+.app-footer,
+.footer.fixed-bottom {
+    color: var(--apple-muted) !important;
+    background: transparent !important;
+    border-top: 1px solid rgba(129, 151, 183, 0.16) !important;
+}
+
+.app-footer .text-muted,
+.footer.fixed-bottom .text-muted {
+    color: var(--apple-muted) !important;
+}
+
+@media (max-width: 768px) {
+    .monitor-shell,
+    .admin-shell {
+        padding-top: 1rem;
+    }
+
+    .card.shadow-sm {
+        border-radius: 24px !important;
+    }
+
+    .card-body {
+        padding: 1rem !important;
+    }
+}
+
 
 `;
 }

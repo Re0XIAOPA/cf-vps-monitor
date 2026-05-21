@@ -1,0 +1,9 @@
+name = "cf-vps-monitor"
+main = "worker.js"
+compatibility_date = "2026-05-21"
+
+# 关键：D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "cf-vps-monitor"
+database_id = "86e31b9d-c527-49ec-9c9e-5bc77e97b034"
