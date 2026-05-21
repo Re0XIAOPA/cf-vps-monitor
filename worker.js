@@ -3931,16 +3931,17 @@ function getIndexHtml() {
             background-color: #f8f9fa;
         }
         [data-bs-theme="dark"] .card {
-            background-color: #232b3d;
-            border: 1px solid #3a4556;
+            background-color: rgba(20, 25, 35, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .card-header {
-            background-color: #2a3548;
-            border-bottom: 1px solid #3a4556;
+            background-color: rgba(30, 37, 50, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .modal-content {
-            background-color: #1e2433;
+            background-color: rgba(26, 30, 45, 0.95);
             color: #e2e8f0;
+            backdrop-filter: blur(10px);
         }
         [data-bs-theme="dark"] .modal-header {
             border-bottom-color: #2d3748;
@@ -3949,12 +3950,12 @@ function getIndexHtml() {
             border-top-color: #2d3748;
         }
         [data-bs-theme="dark"] .form-control {
-            background-color: #2d3748;
+            background-color: rgba(30, 37, 50, 0.75);
             color: #e2e8f0;
-            border-color: #3a4556;
+            border-color: rgba(255, 255, 255, 0.15);
         }
         [data-bs-theme="dark"] .form-control:focus {
-            background-color: #2d3748;
+            background-color: rgba(30, 37, 50, 0.8);
             color: #e2e8f0;
             border-color: #60a5fa;
             box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
@@ -4029,7 +4030,7 @@ function getIndexHtml() {
                     <i class="bi bi-moon-stars-fill"></i>
                 </button>
                 <a class="nav-link text-light" id="adminAuthLink" href="/login.html" style="white-space: nowrap;" title="后台">
-                    <i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>
+                    <i class="bi bi-activity me-1"></i><span class="nav-link-label">后台</span>
                 </a>
             </div>
         </div>
@@ -4309,30 +4310,31 @@ function getLoginHtml() {
             background-color: #f8f9fa;
         }
         [data-bs-theme="dark"] .card {
-            background-color: #232b3d;
-            border: 1px solid #3a4556;
+            background-color: rgba(20, 25, 35, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .card-header {
-            background-color: #2a3548;
-            border-bottom: 1px solid #3a4556;
+            background-color: rgba(30, 37, 50, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .modal-content {
-            background-color: #1e2433;
+            background-color: rgba(26, 30, 45, 0.95);
             color: #e2e8f0;
+            backdrop-filter: blur(10px);
         }
         [data-bs-theme="dark"] .modal-header {
-            border-bottom-color: #2d3748;
+            border-bottom-color: rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .modal-footer {
-            border-top-color: #2d3748;
+            border-top-color: rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .form-control {
-            background-color: #2d3748;
+            background-color: rgba(30, 37, 50, 0.75);
             color: #e2e8f0;
-            border-color: #3a4556;
+            border-color: rgba(255, 255, 255, 0.15);
         }
         [data-bs-theme="dark"] .form-control:focus {
-            background-color: #2d3748;
+            background-color: rgba(30, 37, 50, 0.8);
             color: #e2e8f0;
             border-color: #60a5fa;
             box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
@@ -4503,7 +4505,7 @@ function getAdminHtml() {
             </a>
             <div class="d-flex align-items-center flex-wrap">
                 <a class="nav-link text-light me-2" href="/" style="white-space: nowrap;" title="返回首页">
-                    <i class="bi bi-house-door me-1"></i><span class="nav-link-label">首页</span>
+                    <i class="bi bi-activity me-1"></i><span class="nav-link-label">首页</span>
                 </a>
 
                 <!-- PC端直接显示的按钮 -->
@@ -5300,7 +5302,7 @@ hr.my-4 {
 
 /* 暗色主题下的单一卡片样式 */
 [data-bs-theme="dark"] .card.shadow-sm {
-    background-color: #232b3d;
+    background-color: rgba(20, 25, 35, 0.6);
     box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3) !important;
 }
 
@@ -5792,18 +5794,18 @@ body {
         }
 
         .navbar {
-            background-color: #1a1f2e !important;
+            background-color: rgba(20, 25, 35, 0.7) !important;
         }
 
         /* 暗色主题移动端卡片样式 */
         .mobile-server-card, .mobile-site-card {
-            background: #232b3d;
-            border-color: #3a4556;
+            background: rgba(20, 25, 35, 0.6);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .mobile-card-header {
-            background-color: #2a3548;
-            border-bottom-color: #3a4556;
+            background-color: rgba(30, 37, 50, 0.7);
+            border-bottom-color: rgba(255, 255, 255, 0.1);
         }
 
         .mobile-card-title {
@@ -6603,9 +6605,9 @@ p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
 
 [data-bs-theme="dark"] {
     --monitor-bg: #111827;
-    --monitor-surface: rgba(17, 24, 39, 0.9);
-    --monitor-surface-strong: #172033;
-    --monitor-border: rgba(148, 163, 184, 0.18);
+    --monitor-surface: rgba(17, 24, 39, 0.6);
+    --monitor-surface-strong: rgba(26, 30, 45, 0.8);
+    --monitor-border: rgba(255, 255, 255, 0.1);
     --monitor-text: #f8fafc;
     --monitor-muted: #cbd5e1;
     --monitor-primary: #60a5fa;
@@ -6888,9 +6890,9 @@ body {
 
 [data-bs-theme="dark"] {
     --monitor-bg: #0f172a;
-    --monitor-surface: #111c31;
-    --monitor-surface-strong: #14213a;
-    --monitor-border: rgba(226, 232, 240, 0.14);
+    --monitor-surface: rgba(15, 23, 42, 0.6);
+    --monitor-surface-strong: rgba(20, 33, 58, 0.8);
+    --monitor-border: rgba(255, 255, 255, 0.1);
     --monitor-text: #f8fafc;
     --monitor-muted: #cbd5e1;
     --monitor-primary: #7aa2ff;
@@ -7036,7 +7038,7 @@ body {
 }
 
 [data-bs-theme="dark"] .card.shadow-sm {
-    background: #232b3d;
+    background: rgba(20, 25, 35, 0.6);
 }
 
 .card-body {
@@ -7128,7 +7130,7 @@ body {
 [data-bs-theme="dark"] .btn-outline-primary,
 [data-bs-theme="dark"] .btn-outline-info,
 [data-bs-theme="dark"] .btn-outline-danger {
-    background: #2d3748;
+    background: rgba(30, 37, 50, 0.75);
 }
 
 .form-control {
@@ -8304,7 +8306,7 @@ async function updateAdminLink() {
         const token = localStorage.getItem('auth_token');
         if (!token) {
             // Not logged in (no token)
-            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>';
+            adminLink.innerHTML = '<i class="bi bi-activity me-1"></i><span class="nav-link-label">后台</span>';
             adminLink.title = '后台';
             adminLink.href = '/login.html';
             return;
@@ -8313,19 +8315,19 @@ async function updateAdminLink() {
         const data = await publicApiRequest('/api/auth/status');
         if (data.authenticated) {
             // Logged in
-            adminLink.innerHTML = '<i class="bi bi-speedometer2 me-1"></i><span class="nav-link-label">后台</span>';
+            adminLink.innerHTML = '<i class="bi bi-activity me-1"></i><span class="nav-link-label">后台</span>';
             adminLink.title = '后台';
             adminLink.href = '/admin.html';
         } else {
             // Invalid token or not authenticated
-            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>';
+            adminLink.innerHTML = '<i class="bi bi-activity me-1"></i><span class="nav-link-label">后台</span>';
             adminLink.title = '后台';
             adminLink.href = '/login.html';
             localStorage.removeItem('auth_token'); // Clean up invalid token
         }
     } catch (error) {
                 // Network error, assume not logged in
-        adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>';
+        adminLink.innerHTML = '<i class="bi bi-activity me-1"></i><span class="nav-link-label">后台</span>';
         adminLink.title = '后台';
         adminLink.href = '/login.html';
     }
