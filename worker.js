@@ -3873,7 +3873,7 @@ function getIndexHtml() {
 
         /* Dark Theme Adjustments */
         [data-bs-theme="dark"] body {
-            background-color: #212529 !important; /* Bootstrap dark bg */
+            background-color: transparent !important; /* Bootstrap dark bg */
             color: #ffffff !important; /* White text for dark mode */
         }
         [data-bs-theme="dark"] h1, [data-bs-theme="dark"] h2, [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4, [data-bs-theme="dark"] h5, [data-bs-theme="dark"] h6 {
@@ -3884,9 +3884,6 @@ function getIndexHtml() {
         }
         [data-bs-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item):not(.navbar-brand):hover {
             color: #add8e6; /* Lighter blue on hover */
-        }
-        [data-bs-theme="dark"] .navbar-dark {
-            background-color: #343a40 !important; /* Darker navbar */
         }
         [data-bs-theme="dark"] .table {
             color: #ffffff; /* White table text */
@@ -5757,12 +5754,12 @@ body {
         }
 
         .navbar {
-            background-color: #212529 !important; /* Ensure override Bootstrap default */
+            background-color: #101010ff !important; /* Ensure override Bootstrap default */
         }
 
         /* 暗色主题移动端卡片样式 */
         .mobile-server-card, .mobile-site-card {
-            background: var(--bs-dark, #212529);
+            background: var(--bs-dark, #101010ff);
             border-color: var(--bs-border-color, #495057);
         }
 
@@ -6950,10 +6947,6 @@ body {
     box-shadow: none;
 }
 
-[data-bs-theme="dark"] .navbar {
-    background: rgba(15, 23, 42, 0.82) !important;
-}
-
 .navbar .btn-outline-light,
 .navbar .nav-link {
     border-radius: 999px;
@@ -7208,7 +7201,7 @@ body {
 }
 
 [data-bs-theme="dark"] body {
-    background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
+    background: linear-gradient(135deg, #101010ff 0%, #101010ff 44%, #101010ff 100%) !important;
 }
 
 body {
@@ -7232,8 +7225,6 @@ body {
 }
 
 [data-bs-theme="dark"] .navbar {
-    background: rgba(30, 35, 45, 0.82) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .navbar .container {
@@ -7366,6 +7357,7 @@ body {
 .admin-shell {
     max-width: 1180px;
     padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
 }
 
 .dashboard-stack {
@@ -7958,14 +7950,9 @@ body.custom-background-enabled .form-select {
     background: transparent !important;
 }
 
-[data-bs-theme="dark"] body {
-    background: #030303 !important;
-}
-
 [data-bs-theme="dark"] .navbar,
 [data-bs-theme="dark"] .app-footer,
 [data-bs-theme="dark"] .footer.fixed-bottom {
-    background: #030303 !important;
     border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
