@@ -5322,8 +5322,8 @@ hr.my-4 {
 }
 
 /* 导航栏主题跟随 - 精简版 */
-[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.7) !important; }
-[data-bs-theme="dark"] .navbar { background-color: rgba(20, 25, 35, 0.7) !important; }
+[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.88) !important; }
+[data-bs-theme="dark"] .navbar { background-color: rgba(15, 20, 30, 0.75) !important; }
 
 /* 导航栏文字主题跟随 */
 [data-bs-theme="light"] .navbar .nav-link, [data-bs-theme="light"] .navbar a { color: #212529 !important; }
@@ -6065,21 +6065,21 @@ body.custom-background-enabled::before {
 
 /* 启用自定义背景时的页面元素透明度调整 */
 body.custom-background-enabled .navbar {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.7)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 body.custom-background-enabled .card {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.7)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 body.custom-background-enabled .card-header {
-    background-color: rgba(0, 0, 0, calc(0.02 * var(--page-opacity))) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, calc(0.08 * var(--page-opacity)));
+    background-color: rgba(0, 0, 0, calc(0.03 * var(--page-opacity))) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, calc(0.1 * var(--page-opacity)));
 }
 
 body.custom-background-enabled .modal-content {
@@ -6087,7 +6087,7 @@ body.custom-background-enabled .modal-content {
 }
 
 body.custom-background-enabled .footer {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.7)) !important;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(5px);
 }
@@ -6232,21 +6232,21 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的自定义背景样式 */
 [data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
-    border-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card-header {
-    background-color: rgba(30, 37, 50, calc(0.5 * var(--page-opacity))) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(20, 25, 35, calc(0.5 * var(--page-opacity) + 0.2)) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .modal-content {
@@ -6254,7 +6254,7 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .footer {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
@@ -6369,13 +6369,13 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-server-card,
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-card-header {
-    background-color: rgba(30, 37, 50, calc(0.5 * var(--page-opacity))) !important;
+    background-color: rgba(20, 25, 35, calc(0.5 * var(--page-opacity) + 0.2)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .table-striped > tbody > tr:nth-of-type(odd) > * {
@@ -6388,27 +6388,27 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 覆盖使用CSS变量的元素 - 确保背景图能显示 */
 body.custom-background-enabled .navbar {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.7)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
 }
 
 body.custom-background-enabled .card.shadow-sm {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.7)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card.shadow-sm {
-    background: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
 }
 
 body.custom-background-enabled .footer.fixed-bottom {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.7)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .footer.fixed-bottom {
-    background: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
 }
 
 body.custom-background-enabled .table-responsive {
@@ -6416,11 +6416,11 @@ body.custom-background-enabled .table-responsive {
 }
 
 body.custom-background-enabled .form-control {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.6 + 0.3)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.15 + 0.8)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .form-control {
-    background: rgba(30, 37, 50, calc(var(--page-opacity) * 0.5 + 0.3)) !important;
+    background: rgba(20, 30, 45, calc(var(--page-opacity) * 0.2 + 0.65)) !important;
 }
 
 
