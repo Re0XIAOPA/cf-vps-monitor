@@ -5322,7 +5322,7 @@ hr.my-4 {
 }
 
 /* 导航栏主题跟随 - 精简版 */
-[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.8) !important; }
+[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.88) !important; }
 [data-bs-theme="dark"] .navbar { background-color: rgba(15, 20, 30, 0.75) !important; }
 
 /* 导航栏文字主题跟随 */
@@ -6065,21 +6065,21 @@ body.custom-background-enabled::before {
 
 /* 启用自定义背景时的页面元素透明度调整 */
 body.custom-background-enabled .navbar {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.15 + 0.7)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.85)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 body.custom-background-enabled .card {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.86)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.05 + 0.9)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 body.custom-background-enabled .card-header {
-    background-color: rgba(0, 0, 0, calc(0.03 * var(--page-opacity))) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, calc(0.1 * var(--page-opacity)));
+    background-color: rgba(0, 0, 0, calc(0.04 * var(--page-opacity))) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, calc(0.12 * var(--page-opacity)));
 }
 
 body.custom-background-enabled .modal-content {
@@ -6087,7 +6087,7 @@ body.custom-background-enabled .modal-content {
 }
 
 body.custom-background-enabled .footer {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.15 + 0.7)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.85)) !important;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(5px);
 }
@@ -6212,7 +6212,7 @@ body.custom-background-enabled .dropdown-menu {
 /* 移动端卡片透明度调整 */
 body.custom-background-enabled .mobile-server-card,
 body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.88)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.05 + 0.9)) !important;
     backdrop-filter: saturate(140%) blur(12px);
     -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
@@ -6232,21 +6232,21 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的自定义背景样式 */
 [data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card {
-    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card-header {
-    background-color: rgba(20, 25, 35, calc(0.5 * var(--page-opacity) + 0.2)) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(20, 25, 35, calc(0.5 * var(--page-opacity) + 0.25)) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .modal-content {
@@ -6254,7 +6254,7 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .footer {
-    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
+    background-color: rgba(10, 15, 25, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
@@ -6388,27 +6388,27 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 覆盖使用CSS变量的元素 - 确保背景图能显示 */
 body.custom-background-enabled .navbar {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.15 + 0.7)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.85)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
+    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
 }
 
 body.custom-background-enabled .card.shadow-sm {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.86)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.05 + 0.9)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card.shadow-sm {
-    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
+    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
 }
 
 body.custom-background-enabled .footer.fixed-bottom {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.15 + 0.7)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.85)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .footer.fixed-bottom {
-    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.3 + 0.4)) !important;
+    background: rgba(10, 15, 25, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
 }
 
 body.custom-background-enabled .table-responsive {
@@ -7530,12 +7530,12 @@ body {
 .table {
     color: var(--apple-text) !important;
     --bs-table-bg: transparent;
-    --bs-table-striped-bg: rgba(255, 255, 255, 0.28);
-    --bs-table-hover-bg: rgba(0, 122, 255, 0.08);
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.03);
+    --bs-table-hover-bg: rgba(0, 122, 255, 0.06);
 }
 
 .table thead th {
-    background: rgba(248, 251, 255, 0.74) !important;
+    background: rgba(248, 251, 255, 0.85) !important;
     color: var(--apple-muted) !important;
     border-bottom: 1px solid var(--apple-line) !important;
     font-size: 0.78rem !important;
@@ -7553,18 +7553,18 @@ body {
 }
 
 [data-bs-theme="dark"] .table {
-    --bs-table-striped-bg: rgba(255, 255, 255, 0.025);
-    --bs-table-hover-bg: rgba(255, 255, 255, 0.045);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.04);
+    --bs-table-hover-bg: rgba(96, 165, 250, 0.08);
 }
 
 [data-bs-theme="dark"] .table thead th {
-    background: rgba(15, 15, 17, 0.95) !important;
-    color: #a1a1aa !important;
+    background: rgba(20, 25, 35, 0.95) !important;
+    color: #e2e8f0 !important;
 }
 
 [data-bs-theme="dark"] .table td {
-    border-color: rgba(255, 255, 255, 0.07) !important;
-    color: #d4d4d8 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
 }
 
 .btn {
