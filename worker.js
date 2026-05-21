@@ -887,7 +887,9 @@ const D1_SCHEMAS = {
     INSERT OR IGNORE INTO app_config (key, value) VALUES ('vps_report_interval_seconds', '60');
     INSERT OR IGNORE INTO app_config (key, value) VALUES ('custom_background_enabled', 'false');
     INSERT OR IGNORE INTO app_config (key, value) VALUES ('custom_background_url', '');
-    INSERT OR IGNORE INTO app_config (key, value) VALUES ('page_opacity', '80');`
+    INSERT OR IGNORE INTO app_config (key, value) VALUES ('page_opacity', '80');
+    INSERT OR IGNORE INTO app_config (key, value) VALUES ('show_server_section', 'true');
+    INSERT OR IGNORE INTO app_config (key, value) VALUES ('show_site_section', 'true');`
 };
 
 // ==================== 数据库初始化 ====================
@@ -1519,21 +1521,18 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
     }
   }
 
-  // 批量VPS状态查询（公开，支持管理员和游客模式）
+  // 批量VPS状态查询（公开首页只返回已展示的服务器）
   if (path === '/api/status/batch' && method === 'GET') {
     try {
-      const user = await authenticateRequestOptional(request, env);
-      const isAdmin = user !== null;
-
       // 使用JOIN查询一次性获取所有VPS状态
       const { results } = await env.DB.prepare(`
         SELECT s.id, s.name, s.description,
                m.timestamp, m.cpu, m.memory, m.disk, m.network, m.uptime
         FROM servers s
         LEFT JOIN metrics m ON s.id = m.server_id
-        WHERE s.is_public = 1 OR ? = 1
+        WHERE s.is_public = 1
         ORDER BY s.sort_order ASC NULLS LAST, s.name ASC
-      `).bind(isAdmin ? 1 : 0).all();
+      `).all();
 
       // 处理数据格式，保持与单个查询API的兼容性
       const servers = (results || []).map(row => {
@@ -1575,9 +1574,9 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
         return createErrorResponse('Invalid server ID', '无效的服务器ID', 400, corsHeaders);
       }
 
-      // 查询服务器信息（移除权限限制，让前台能正常显示）
+      // 查询服务器信息（公开接口只允许访问已展示的服务器）
       const serverData = await env.DB.prepare(
-        'SELECT id, name, description FROM servers WHERE id = ?'
+        'SELECT id, name, description FROM servers WHERE id = ? AND is_public = 1'
       ).bind(serverId).first();
 
       if (!serverData) {
@@ -2542,21 +2541,15 @@ async function handleApiRequest(request, env, ctx) {
 
   // ==================== 公共API ====================
 
-  // 获取所有监控站点状态（公开，支持管理员和游客模式）
+  // 获取所有监控站点状态（公开首页只返回已展示的网站）
   if (path === '/api/sites/status' && method === 'GET') {
     try {
-      // 检查是否为管理员登录状态
-      const user = await authenticateRequestOptional(request, env);
-      const isAdmin = user !== null;
-
-      let query = `
+      const query = `
         SELECT id, name, last_checked, last_status, last_status_code, last_response_time_ms
         FROM monitored_sites
+        WHERE is_public = 1
+        ORDER BY sort_order ASC NULLS LAST, name ASC, id ASC
       `;
-      if (!isAdmin) {
-        query += ` WHERE is_public = 1`;
-      }
-      query += ` ORDER BY sort_order ASC NULLS LAST, name ASC, id ASC`;
 
       const { results } = await env.DB.prepare(query).all();
       const sites = results || [];
@@ -2759,6 +2752,98 @@ async function handleApiRequest(request, env, ctx) {
       });
     } catch (error) {
             return new Response(JSON.stringify({
+        error: 'Internal server error',
+        message: error.message
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // ==================== 展示设置API ====================
+
+  // 获取首页模块展示设置（公开API - 所有用户可访问）
+  if (path === '/api/display-settings' && method === 'GET') {
+    try {
+      const { results } = await env.DB.prepare(`
+        SELECT key, value FROM app_config
+        WHERE key IN ('show_server_section', 'show_site_section')
+      `).all();
+
+      const settings = {
+        showServerSection: true,
+        showSiteSection: true
+      };
+
+      (results || []).forEach(row => {
+        if (row.key === 'show_server_section') {
+          settings.showServerSection = row.value !== 'false';
+        } else if (row.key === 'show_site_section') {
+          settings.showSiteSection = row.value !== 'false';
+        }
+      });
+
+      return new Response(JSON.stringify(settings), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        showServerSection: true,
+        showSiteSection: true
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // 设置首页模块展示配置（管理员）
+  if (path === '/api/admin/display-settings' && method === 'POST') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized',
+        message: '需要管理员权限'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      const { showServerSection, showSiteSection } = await request.json();
+
+      if (typeof showServerSection !== 'boolean' || typeof showSiteSection !== 'boolean') {
+        return new Response(JSON.stringify({
+          error: 'Invalid display settings',
+          message: '显示设置必须是布尔值'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      await env.DB.batch([
+        env.DB.prepare('REPLACE INTO app_config (key, value) VALUES (?, ?)').bind(
+          'show_server_section',
+          showServerSection.toString()
+        ),
+        env.DB.prepare('REPLACE INTO app_config (key, value) VALUES (?, ?)').bind(
+          'show_site_section',
+          showSiteSection.toString()
+        )
+      ]);
+
+      configCache.clearKey('monitoring_settings');
+
+      return new Response(JSON.stringify({
+        success: true,
+        settings: { showServerSection, showSiteSection }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
         error: 'Internal server error',
         message: error.message
       }), {
@@ -3954,17 +4039,20 @@ function getIndexHtml() {
                 <button id="themeToggler" class="btn btn-outline-light btn-sm me-2" title="切换主题">
                     <i class="bi bi-moon-stars-fill"></i>
                 </button>
-                <a class="nav-link text-light" id="adminAuthLink" href="/login.html" style="white-space: nowrap;">管理员登录</a>
+                <a class="nav-link text-light" id="adminAuthLink" href="/login.html" style="white-space: nowrap;" title="管理员登录">
+                    <i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>
+                </a>
             </div>
         </div>
     </nav>
 
+    <main class="container monitor-shell">
     <!-- 单一主卡片容器 -->
-    <div class="container mt-4">
+    <div id="statusDashboardCard">
         <div class="card shadow-sm">
             <div class="card-body">
                 <!-- 服务器监控部分 -->
-                <div class="mb-4">
+                <section id="serverStatusSection" class="dashboard-section mb-4">
                     <h5 class="card-title mb-3">
                         <i class="bi bi-server me-2"></i>服务器监控
                     </h5>
@@ -4008,13 +4096,13 @@ function getIndexHtml() {
                             <div class="mt-2">加载服务器数据中...</div>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 <!-- 分隔线 -->
-                <hr class="my-4">
+                <hr id="statusSectionDivider" class="my-4">
 
                 <!-- 网站监控部分 -->
-                <div>
+                <section id="siteStatusSection" class="dashboard-section">
                     <h5 class="card-title mb-3">
                         <i class="bi bi-globe me-2"></i>网站在线状态
                     </h5>
@@ -4053,10 +4141,11 @@ function getIndexHtml() {
                             <div class="mt-2">加载网站数据中...</div>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
+    </main>
     <!-- End Website Status Section -->
 
     <!-- Server Detailed row template (hidden by default) -->
@@ -4070,7 +4159,7 @@ function getIndexHtml() {
         </tr>
     </template>
 
-    <footer class="footer fixed-bottom py-2 bg-light border-top">
+    <footer class="footer app-footer py-4">
         <div class="container text-center">
             <span class="text-muted small">VPS监控面板 &copy; 2025</span>
             <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
@@ -4351,7 +4440,7 @@ function getLoginHtml() {
         </div>
     </div>
 
-    <footer class="footer fixed-bottom py-2 bg-light border-top">
+    <footer class="footer app-footer py-4">
         <div class="container text-center">
             <span class="text-muted small">VPS监控面板 &copy; 2025</span>
             <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
@@ -4422,7 +4511,9 @@ function getAdminHtml() {
                 VPS监控面板
             </a>
             <div class="d-flex align-items-center flex-wrap">
-                <a class="nav-link text-light me-2" href="/" style="white-space: nowrap;">返回首页</a>
+                <a class="nav-link text-light me-2" href="/" style="white-space: nowrap;" title="返回首页">
+                    <i class="bi bi-house-door me-1"></i><span class="nav-link-label">首页</span>
+                </a>
 
                 <!-- PC端直接显示的按钮 -->
                 <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light btn-sm me-2 desktop-only" title="GitHub Repository">
@@ -4452,13 +4543,16 @@ function getAdminHtml() {
                     </ul>
                 </div>
 
-                <button id="logoutBtn" class="btn btn-outline-light btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">退出</button>
+                <button id="logoutBtn" class="btn btn-outline-light btn-sm" title="退出登录" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
             </div>
         </div>
     </nav>
 
+    <main class="container monitor-shell admin-shell">
     <!-- 单一主管理卡片容器 -->
-    <div class="container mt-4">
+    <div>
         <div class="card shadow-sm">
             <div class="card-body">
                 <!-- 服务器管理部分 -->
@@ -4468,6 +4562,14 @@ function getAdminHtml() {
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-server me-2"></i>服务器管理
                             </h5>
+                            <div class="section-display-switch mt-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="showServerSectionToggle">
+                                    <label class="form-check-label" for="showServerSectionToggle">
+                                        <i class="bi bi-eye me-1"></i>首页展示服务器监控
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         <div class="admin-header-content">
                             <!-- VPS Data Update Frequency Form -->
@@ -4551,6 +4653,14 @@ function getAdminHtml() {
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-globe me-2"></i>网站监控管理
                             </h5>
+                            <div class="section-display-switch mt-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="showSiteSectionToggle">
+                                    <label class="form-check-label" for="showSiteSectionToggle">
+                                        <i class="bi bi-eye me-1"></i>首页展示网站在线状态
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         <div class="admin-header-content">
                             <!-- Action Buttons Group - 桌面端隐藏，移动端显示居中按钮 -->
@@ -4675,6 +4785,7 @@ function getAdminHtml() {
             </div>
         </div>
     </div>
+    </main>
 
     <!-- Global Settings Section (Now integrated above Server Management List) -->
     <!-- The form is now part of the header for Server Management -->
@@ -4844,7 +4955,7 @@ function getAdminHtml() {
         </div>
     </div>
 
-    <footer class="footer fixed-bottom py-2 bg-light border-top">
+    <footer class="footer app-footer py-4">
         <div class="container text-center">
             <span class="text-muted small">VPS监控面板 &copy; 2025</span>
             <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
@@ -6411,6 +6522,658 @@ p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
     line-height: 1.25;
 }
 
+/* ==================== 2026视觉优化层 ==================== */
+:root {
+    --monitor-bg: #f4f7fb;
+    --monitor-surface: rgba(255, 255, 255, 0.92);
+    --monitor-surface-strong: #ffffff;
+    --monitor-border: rgba(15, 23, 42, 0.1);
+    --monitor-text: #182033;
+    --monitor-muted: #64748b;
+    --monitor-primary: #2563eb;
+    --monitor-accent: #14b8a6;
+    --monitor-warning: #f59e0b;
+    --monitor-danger: #ef4444;
+    --monitor-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="dark"] {
+    --monitor-bg: #111827;
+    --monitor-surface: rgba(17, 24, 39, 0.9);
+    --monitor-surface-strong: #172033;
+    --monitor-border: rgba(148, 163, 184, 0.18);
+    --monitor-text: #f8fafc;
+    --monitor-muted: #cbd5e1;
+    --monitor-primary: #60a5fa;
+    --monitor-accent: #2dd4bf;
+    --monitor-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+}
+
+html, body {
+    background: var(--monitor-bg) !important;
+    color: var(--monitor-text);
+}
+
+body {
+    font-family: Inter, "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+
+.navbar {
+    min-height: 58px;
+    height: auto;
+    border-bottom: 1px solid var(--monitor-border);
+    background: var(--monitor-surface) !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.navbar .container {
+    min-height: 58px;
+}
+
+.navbar-brand {
+    color: var(--monitor-text) !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.05rem;
+}
+
+.navbar-brand svg {
+    width: 30px;
+    height: 30px;
+    filter: drop-shadow(0 6px 12px rgba(37, 99, 235, 0.22));
+}
+
+.navbar .btn-outline-light,
+.navbar .nav-link {
+    border-color: var(--monitor-border) !important;
+    color: var(--monitor-text) !important;
+    background: rgba(255, 255, 255, 0.45);
+    border-radius: 8px;
+}
+
+[data-bs-theme="dark"] .navbar .btn-outline-light,
+[data-bs-theme="dark"] .navbar .nav-link {
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.navbar .nav-link {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--monitor-border);
+}
+
+.navbar .btn-outline-light:hover,
+.navbar .nav-link:hover {
+    color: #ffffff !important;
+    background: var(--monitor-primary) !important;
+    border-color: var(--monitor-primary) !important;
+}
+
+.card.shadow-sm {
+    border: 1px solid var(--monitor-border);
+    border-radius: 8px;
+    background: var(--monitor-surface);
+    box-shadow: var(--monitor-shadow) !important;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.dashboard-section,
+.admin-header-row {
+    position: relative;
+}
+
+.card-title {
+    color: var(--monitor-text) !important;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 700;
+}
+
+.card-title i {
+    color: var(--monitor-primary) !important;
+}
+
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(37, 99, 235, 0.035);
+    --bs-table-hover-bg: rgba(20, 184, 166, 0.075);
+    color: var(--monitor-text);
+    margin-bottom: 0;
+}
+
+.table-responsive {
+    border: 1px solid var(--monitor-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--monitor-surface-strong);
+}
+
+.table thead th {
+    background: rgba(37, 99, 235, 0.08) !important;
+    color: var(--monitor-muted);
+    border-bottom: 1px solid var(--monitor-border);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table td {
+    border-color: var(--monitor-border);
+    vertical-align: middle;
+}
+
+.badge {
+    border-radius: 6px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.progress {
+    height: 1.05rem !important;
+    min-width: 74px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(148, 163, 184, 0.22) !important;
+}
+
+.progress-bar {
+    border-radius: inherit;
+    background: linear-gradient(135deg, var(--monitor-primary), var(--monitor-accent)) !important;
+}
+
+.progress span {
+    color: var(--monitor-text) !important;
+    font-size: 0.76rem !important;
+    line-height: 1.05rem !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+}
+
+.bg-light-green {
+    background-color: var(--monitor-accent) !important;
+}
+
+.history-bar-container {
+    padding: 3px;
+    border-radius: 7px;
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.history-bar {
+    border-radius: 3px;
+}
+
+.history-bar-up { background-color: #22c55e !important; }
+.history-bar-warning { background-color: #f59e0b !important; }
+.history-bar-down { background-color: #ef4444 !important; }
+.history-bar-pending { background-color: #94a3b8 !important; }
+
+.btn {
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.btn-primary {
+    background: var(--monitor-primary);
+    border-color: var(--monitor-primary);
+}
+
+.btn-success {
+    background: var(--monitor-accent);
+    border-color: var(--monitor-accent);
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border-color: var(--monitor-border);
+}
+
+.form-check-input {
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: var(--monitor-accent);
+    border-color: var(--monitor-accent);
+}
+
+.section-display-switch {
+    color: var(--monitor-muted);
+    font-size: 0.9rem;
+}
+
+.section-display-switch .form-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem 0.35rem 2.6rem;
+    border: 1px solid var(--monitor-border);
+    border-radius: 8px;
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.mobile-server-card,
+.mobile-site-card {
+    border-radius: 8px;
+    border-color: var(--monitor-border);
+    background: var(--monitor-surface-strong);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.mobile-card-header {
+    background: rgba(37, 99, 235, 0.07);
+}
+
+.mobile-card-title {
+    color: var(--monitor-text) !important;
+}
+
+.mobile-card-label {
+    color: var(--monitor-muted) !important;
+}
+
+.footer.fixed-bottom {
+    height: 38px;
+    background: var(--monitor-surface) !important;
+    border-top: 1px solid var(--monitor-border);
+}
+
+.footer .text-muted {
+    color: var(--monitor-muted) !important;
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        min-height: auto;
+    }
+
+    .navbar .container {
+        min-height: 56px;
+        gap: 0.5rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .section-display-switch .form-check {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+/* ==================== AppStorePrice风格重构 ==================== */
+:root {
+    --monitor-bg: #fbfcff;
+    --monitor-surface: #ffffff;
+    --monitor-surface-strong: #ffffff;
+    --monitor-border: #e7ecf6;
+    --monitor-text: #101828;
+    --monitor-muted: #667085;
+    --monitor-primary: #2962ff;
+    --monitor-accent: #7c3aed;
+    --monitor-soft-blue: #eef4ff;
+    --monitor-soft-purple: #f3f0ff;
+    --monitor-shadow: 0 18px 50px rgba(16, 24, 40, 0.08);
+}
+
+[data-bs-theme="dark"] {
+    --monitor-bg: #0f172a;
+    --monitor-surface: #111c31;
+    --monitor-surface-strong: #14213a;
+    --monitor-border: rgba(226, 232, 240, 0.14);
+    --monitor-text: #f8fafc;
+    --monitor-muted: #cbd5e1;
+    --monitor-primary: #7aa2ff;
+    --monitor-accent: #b794f4;
+    --monitor-soft-blue: rgba(122, 162, 255, 0.14);
+    --monitor-soft-purple: rgba(183, 148, 244, 0.13);
+    --monitor-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+}
+
+body {
+    background:
+        radial-gradient(circle at 18% 8%, rgba(41, 98, 255, 0.08), transparent 28%),
+        radial-gradient(circle at 82% 12%, rgba(124, 58, 237, 0.08), transparent 30%),
+        var(--monitor-bg) !important;
+    color: var(--monitor-text);
+    letter-spacing: 0;
+}
+
+.monitor-shell,
+.appstore-shell {
+    max-width: 1120px;
+    padding-top: 2rem;
+}
+
+.admin-shell {
+    padding-top: 2rem;
+}
+
+.appstore-hero {
+    text-align: center;
+    padding: 1.2rem 1rem 2.4rem;
+}
+
+.admin-hero {
+    padding-bottom: 1.6rem;
+}
+
+.hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--monitor-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--monitor-primary);
+    font-size: 0.86rem;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.05);
+}
+
+[data-bs-theme="dark"] .hero-kicker {
+    background: rgba(20, 33, 58, 0.7);
+}
+
+.appstore-hero h1 {
+    margin: 1rem auto 0.65rem;
+    max-width: 760px;
+    color: var(--monitor-text);
+    font-size: clamp(2.35rem, 5vw, 4.6rem);
+    line-height: 1.03;
+    font-weight: 800;
+}
+
+.admin-hero h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.appstore-hero p {
+    max-width: 650px;
+    margin: 0 auto;
+    color: var(--monitor-muted);
+    font-size: 1.08rem;
+    line-height: 1.7;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 1.35rem;
+}
+
+.hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.7rem 1.05rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 800;
+    border: 1px solid transparent;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.hero-btn:hover {
+    transform: translateY(-1px);
+}
+
+.hero-btn-primary {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--monitor-primary), var(--monitor-accent));
+    box-shadow: 0 12px 28px rgba(41, 98, 255, 0.22);
+}
+
+.hero-btn-secondary {
+    color: var(--monitor-text);
+    background: #ffffff;
+    border-color: var(--monitor-border);
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.06);
+}
+
+[data-bs-theme="dark"] .hero-btn-secondary {
+    background: var(--monitor-surface-strong);
+}
+
+.navbar {
+    background: rgba(255, 255, 255, 0.86) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: none;
+}
+
+[data-bs-theme="dark"] .navbar {
+    background: rgba(15, 23, 42, 0.82) !important;
+}
+
+.navbar .btn-outline-light,
+.navbar .nav-link {
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(16, 24, 40, 0.06);
+}
+
+[data-bs-theme="dark"] .navbar .btn-outline-light,
+[data-bs-theme="dark"] .navbar .nav-link {
+    background: var(--monitor-surface-strong);
+}
+
+.card.shadow-sm {
+    border-radius: 18px;
+    border: 1px solid var(--monitor-border);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: var(--monitor-shadow) !important;
+}
+
+[data-bs-theme="dark"] .card.shadow-sm {
+    background: rgba(17, 28, 49, 0.9);
+}
+
+.card-body {
+    padding: 1.15rem;
+}
+
+.dashboard-section,
+.card-body > div {
+    border-radius: 14px;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.card-title i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--monitor-soft-blue), var(--monitor-soft-purple));
+    color: var(--monitor-primary) !important;
+}
+
+.table-responsive {
+    border-radius: 14px;
+    border: 1px solid var(--monitor-border);
+    background: var(--monitor-surface);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.table thead th {
+    background: linear-gradient(180deg, #f8faff, #f2f6ff) !important;
+    color: #667085;
+    font-size: 0.78rem;
+    text-transform: none;
+}
+
+[data-bs-theme="dark"] .table thead th {
+    background: rgba(122, 162, 255, 0.1) !important;
+    color: var(--monitor-muted);
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.85rem 0.75rem;
+}
+
+#serverTableBody td:nth-child(3),
+#serverTableBody td:nth-child(4),
+#serverTableBody td:nth-child(5) {
+    min-width: 86px;
+}
+
+#serverTableBody td:nth-child(6),
+#serverTableBody td:nth-child(7),
+#serverTableBody td:nth-child(8),
+#serverTableBody td:nth-child(9),
+#serverTableBody td:nth-child(10),
+#serverTableBody td:nth-child(11),
+#siteStatusTableBody td {
+    color: var(--monitor-text) !important;
+    font-weight: 700;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(41, 98, 255, 0.025);
+}
+
+.btn-primary,
+.btn-success,
+.btn-info {
+    border: none;
+    background: linear-gradient(135deg, var(--monitor-primary), var(--monitor-accent)) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 24px rgba(41, 98, 255, 0.18);
+}
+
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-danger {
+    background: #ffffff;
+    border-color: var(--monitor-border);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary,
+[data-bs-theme="dark"] .btn-outline-primary,
+[data-bs-theme="dark"] .btn-outline-info,
+[data-bs-theme="dark"] .btn-outline-danger {
+    background: var(--monitor-surface-strong);
+}
+
+.form-control {
+    min-height: 42px;
+    border-radius: 12px;
+    background: var(--monitor-surface);
+}
+
+.section-display-switch .form-check {
+    border-radius: 999px;
+    background: #f8faff;
+}
+
+[data-bs-theme="dark"] .section-display-switch .form-check {
+    background: rgba(122, 162, 255, 0.08);
+}
+
+.mobile-server-card,
+.mobile-site-card {
+    border-radius: 16px;
+}
+
+.footer.fixed-bottom {
+    background: rgba(255, 255, 255, 0.84) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+[data-bs-theme="dark"] .footer.fixed-bottom {
+    background: rgba(15, 23, 42, 0.84) !important;
+}
+
+.app-footer,
+.footer.fixed-bottom {
+    position: static !important;
+    height: auto !important;
+    margin-top: auto !important;
+    padding: 1.25rem 0 !important;
+    background: transparent !important;
+    border-top: 1px solid var(--monitor-border) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.app-footer .container,
+.footer.fixed-bottom .container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+body {
+    padding-bottom: 0 !important;
+}
+
+.dropdown-menu:not(.show) {
+    display: none;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.modal:not(.show) {
+    display: none !important;
+}
+
+.modal.show {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .monitor-shell,
+    .appstore-shell {
+        padding-top: 2rem;
+    }
+
+    .appstore-hero {
+        padding: 0.7rem 0.4rem 1.5rem;
+    }
+
+    .appstore-hero h1 {
+        font-size: 2.35rem;
+    }
+
+    .appstore-hero p {
+        font-size: 0.98rem;
+    }
+
+    .hero-actions {
+        gap: 0.55rem;
+    }
+
+    .hero-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .card.shadow-sm {
+        border-radius: 16px;
+    }
+}
+
 
 `;
 }
@@ -6423,6 +7186,10 @@ let vpsUpdateInterval = null;
 let siteUpdateInterval = null;
 let serverDataCache = {}; // Cache server data to avoid re-fetching for details
 let vpsStatusCache = {}; // 用于跟踪VPS状态变化
+let publicDisplaySettings = {
+    showServerSection: true,
+    showSiteSection: true
+};
 const DEFAULT_VPS_REFRESH_INTERVAL_MS = 60000; // Default to 60 seconds for VPS data if backend setting fails
 const DEFAULT_SITE_REFRESH_INTERVAL_MS = 60000; // Default to 60 seconds for Site data
 
@@ -6552,6 +7319,55 @@ async function publicApiRequest(url, options = {}) {
     }
 }
 
+async function loadPublicDisplaySettings() {
+    try {
+        publicDisplaySettings = await publicApiRequest('/api/display-settings');
+    } catch (error) {
+        publicDisplaySettings = { showServerSection: true, showSiteSection: true };
+    }
+
+    const serverSection = document.getElementById('serverStatusSection');
+    const siteSection = document.getElementById('siteStatusSection');
+    const divider = document.getElementById('statusSectionDivider');
+
+    if (serverSection) {
+        serverSection.classList.toggle('d-none', !publicDisplaySettings.showServerSection);
+    }
+    if (siteSection) {
+        siteSection.classList.toggle('d-none', !publicDisplaySettings.showSiteSection);
+    }
+    if (divider) {
+        divider.classList.toggle('d-none', !publicDisplaySettings.showServerSection || !publicDisplaySettings.showSiteSection);
+    }
+    updatePublicDashboardCardVisibility();
+}
+
+function hidePublicSectionWhenEmpty(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.classList.add('d-none');
+    }
+    const serverHidden = document.getElementById('serverStatusSection')?.classList.contains('d-none');
+    const siteHidden = document.getElementById('siteStatusSection')?.classList.contains('d-none');
+    const divider = document.getElementById('statusSectionDivider');
+    if (divider) {
+        divider.classList.toggle('d-none', serverHidden || siteHidden);
+    }
+    updatePublicDashboardCardVisibility();
+}
+
+function updatePublicDashboardCardVisibility() {
+    const dashboardCard = document.getElementById('statusDashboardCard');
+    if (!dashboardCard) return;
+
+    const serverSection = document.getElementById('serverStatusSection');
+    const siteSection = document.getElementById('siteStatusSection');
+    const serverHidden = !serverSection || serverSection.classList.contains('d-none');
+    const siteHidden = !siteSection || siteSection.classList.contains('d-none');
+
+    dashboardCard.classList.toggle('d-none', serverHidden && siteHidden);
+}
+
 // 显示错误消息
 function showError(message, containerId = null) {
     console.error('错误:', message);
@@ -6617,7 +7433,7 @@ function initializeSiteDataUpdates() {
 // 移除手动刷新按钮相关代码，改为自动刷新
 
 // Execute after the page loads (only for main page)
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
         // Check if we're on the main page by looking for the server table
     const serverTableBody = document.getElementById('serverTableBody');
     if (!serverTableBody) {
@@ -6629,13 +7445,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize theme
     initializeTheme();
 
+    // Load display preferences before drawing the public dashboard
+    await loadPublicDisplaySettings();
+
     // Load initial data
-    loadAllServerStatuses();
-    loadAllSiteStatuses();
+    if (publicDisplaySettings.showServerSection) {
+        loadAllServerStatuses();
+    }
+    if (publicDisplaySettings.showSiteSection) {
+        loadAllSiteStatuses();
+    }
 
     // Initialize periodic updates separately
-        initializeVpsDataUpdates();
-        initializeSiteDataUpdates();
+        if (publicDisplaySettings.showServerSection) initializeVpsDataUpdates();
+        if (publicDisplaySettings.showSiteSection) initializeSiteDataUpdates();
 
     // Add click event listener to the table body for row expansion
     serverTableBody.addEventListener('click', handleRowClick);
@@ -6688,7 +7511,8 @@ async function updateAdminLink() {
         const token = localStorage.getItem('auth_token');
         if (!token) {
             // Not logged in (no token)
-            adminLink.textContent = '管理员登录';
+            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>';
+            adminLink.title = '管理员登录';
             adminLink.href = '/login.html';
             return;
         }
@@ -6696,17 +7520,20 @@ async function updateAdminLink() {
         const data = await publicApiRequest('/api/auth/status');
         if (data.authenticated) {
             // Logged in
-            adminLink.textContent = '管理后台';
+            adminLink.innerHTML = '<i class="bi bi-speedometer2 me-1"></i><span class="nav-link-label">管理后台</span>';
+            adminLink.title = '管理后台';
             adminLink.href = '/admin.html';
         } else {
             // Invalid token or not authenticated
-            adminLink.textContent = '管理员登录';
+            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>';
+            adminLink.title = '管理员登录';
             adminLink.href = '/login.html';
             localStorage.removeItem('auth_token'); // Clean up invalid token
         }
     } catch (error) {
                 // Network error, assume not logged in
-        adminLink.textContent = '管理员登录';
+        adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>';
+        adminLink.title = '管理员登录';
         adminLink.href = '/login.html';
     }
 }
@@ -6795,6 +7622,7 @@ function populateDetailsRow(serverId, detailsRow) {
 
 // Load all server statuses
 async function loadAllServerStatuses() {
+    if (!publicDisplaySettings.showServerSection) return;
         try {
         // 使用批量API一次性获取所有VPS状态
         let batchData;
@@ -6811,14 +7639,18 @@ async function loadAllServerStatuses() {
         const serverTableBody = document.getElementById('serverTableBody');
 
         if (allStatuses.length === 0) {
-            noServersAlert.classList.remove('d-none');
-            serverTableBody.innerHTML = '<tr><td colspan="11" class="text-center">No server data available. Please log in to the admin panel to add servers.</td></tr>';
+            hidePublicSectionWhenEmpty('serverStatusSection');
+            noServersAlert.classList.add('d-none');
+            serverTableBody.innerHTML = '';
             // Remove any existing detail rows if the server list becomes empty
             removeAllDetailRows();
             // 同时更新移动端卡片容器
             renderMobileServerCards([]);
             return;
         } else {
+            document.getElementById('serverStatusSection')?.classList.remove('d-none');
+            document.getElementById('statusSectionDivider')?.classList.toggle('d-none', document.getElementById('siteStatusSection')?.classList.contains('d-none'));
+            updatePublicDashboardCardVisibility();
             noServersAlert.classList.add('d-none');
         }
 
@@ -7293,6 +8125,7 @@ function formatUptime(totalSeconds) {
 
 // Load all website statuses
 async function loadAllSiteStatuses() {
+    if (!publicDisplaySettings.showSiteSection) return;
     try {
         let data;
         try {
@@ -7308,12 +8141,16 @@ async function loadAllSiteStatuses() {
         const siteStatusTableBody = document.getElementById('siteStatusTableBody');
 
         if (sites.length === 0) {
-            noSitesAlert.classList.remove('d-none');
-            siteStatusTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No websites are being monitored.</td></tr>'; // Colspan updated
+            hidePublicSectionWhenEmpty('siteStatusSection');
+            noSitesAlert.classList.add('d-none');
+            siteStatusTableBody.innerHTML = ''; // Colspan updated
             // 同时更新移动端卡片容器
             renderMobileSiteCards([]);
             return;
         } else {
+            document.getElementById('siteStatusSection')?.classList.remove('d-none');
+            document.getElementById('statusSectionDivider')?.classList.toggle('d-none', document.getElementById('serverStatusSection')?.classList.contains('d-none'));
+            updatePublicDashboardCardVisibility();
             noSitesAlert.classList.add('d-none');
         }
 
@@ -7387,7 +8224,9 @@ function renderSiteHistoryBar(containerElement, history) {
         if (recordForHour) {
             if (recordForHour.status === 'UP') {
                 barClass = 'history-bar-up';
-            } else if (['DOWN', 'TIMEOUT', 'ERROR'].includes(recordForHour.status)) {
+            } else if (['TIMEOUT', 'ERROR'].includes(recordForHour.status)) {
+                barClass = 'history-bar-warning';
+            } else if (recordForHour.status === 'DOWN') {
                 barClass = 'history-bar-down';
             }
             const recordDate = new Date(recordForHour.timestamp * 1000);
@@ -7973,6 +8812,10 @@ let currentSiteId = null; // For site deletion
 let serverList = [];
 let siteList = []; // For monitored sites
 let hasAddedNewServer = false; // 标记是否添加了新服务器
+let displaySettings = {
+    showServerSection: true,
+    showSiteSection: true
+};
 
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', async function() {
@@ -8001,6 +8844,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadBackgroundSettings();
     // 加载全局设置 (VPS Report Interval) - will use serverAlert for notifications
     loadGlobalSettings();
+    // 加载首页展示设置
+    loadDisplaySettings();
 
     // 初始化管理后台的定时刷新机制
     initializeVpsDataUpdates();
@@ -8199,6 +9044,14 @@ function initEventListeners() {
     // Global Settings Event Listener
     document.getElementById('saveVpsReportIntervalBtn').addEventListener('click', function() {
         saveVpsReportInterval();
+    });
+
+    document.getElementById('showServerSectionToggle').addEventListener('change', function() {
+        saveDisplaySettings({ showServerSection: this.checked });
+    });
+
+    document.getElementById('showSiteSectionToggle').addEventListener('change', function() {
+        saveDisplaySettings({ showSiteSection: this.checked });
     });
 
     // 服务器模态框关闭事件监听器
@@ -9584,6 +10437,53 @@ function updateOpacityPreview() {
 
 
 // --- Global Settings Functions (VPS Report Interval) ---
+async function loadDisplaySettings() {
+    try {
+        const settings = await apiRequest('/api/display-settings');
+        displaySettings = {
+            showServerSection: settings.showServerSection !== false,
+            showSiteSection: settings.showSiteSection !== false
+        };
+    } catch (error) {
+        displaySettings = { showServerSection: true, showSiteSection: true };
+        showToast('danger', '加载首页展示设置失败: ' + error.message);
+    }
+
+    const serverToggle = document.getElementById('showServerSectionToggle');
+    const siteToggle = document.getElementById('showSiteSectionToggle');
+    if (serverToggle) serverToggle.checked = displaySettings.showServerSection;
+    if (siteToggle) siteToggle.checked = displaySettings.showSiteSection;
+}
+
+async function saveDisplaySettings(partialSettings) {
+    const serverToggle = document.getElementById('showServerSectionToggle');
+    const siteToggle = document.getElementById('showSiteSectionToggle');
+
+    const nextSettings = {
+        showServerSection: partialSettings.showServerSection ?? serverToggle.checked,
+        showSiteSection: partialSettings.showSiteSection ?? siteToggle.checked
+    };
+
+    if (serverToggle) serverToggle.disabled = true;
+    if (siteToggle) siteToggle.disabled = true;
+
+    try {
+        await apiRequest('/api/admin/display-settings', {
+            method: 'POST',
+            body: JSON.stringify(nextSettings)
+        });
+
+        displaySettings = nextSettings;
+        showToast('success', '首页展示设置已保存');
+    } catch (error) {
+        showToast('danger', '保存首页展示设置失败: ' + error.message);
+        await loadDisplaySettings();
+    } finally {
+        if (serverToggle) serverToggle.disabled = false;
+        if (siteToggle) siteToggle.disabled = false;
+    }
+}
+
 async function loadGlobalSettings() {
     try {
         const settings = await apiRequest('/api/admin/settings/vps-report-interval');
