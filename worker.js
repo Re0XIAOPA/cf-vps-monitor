@@ -3873,7 +3873,7 @@ function getIndexHtml() {
 
         /* Dark Theme Adjustments */
         [data-bs-theme="dark"] body {
-            background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
+            background: transparent !important;
             color: #e2e8f0 !important;
         }
         [data-bs-theme="dark"] h1, [data-bs-theme="dark"] h2, [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4, [data-bs-theme="dark"] h5, [data-bs-theme="dark"] h6 {
@@ -3906,21 +3906,20 @@ function getIndexHtml() {
             color: #ced4da; /* Consistent text color */
         }
         [data-bs-theme="dark"] .progress {
-            background-color: #495057; /* Darker progress bar background */
+            background-color: rgba(255, 255, 255, 0.1);
         }
-        [data-bs-theme="dark"] .progress span { /* Text on progress bar */
-            color: #ffffff !important; /* White text for progress bars in dark mode */
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Add shadow for readability */
+        [data-bs-theme="dark"] .progress span {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
         [data-bs-theme="dark"] .footer.bg-light {
-            background-color: #343a40 !important; /* Darker footer */
-            border-top: 1px solid #495057;
+            background-color: transparent !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* 已移至统一的底部版权样式中 */
         [data-bs-theme="dark"] .alert-info {
-            background-color: #17a2b8; /* Bootstrap info color, adjust if needed */
+            background-color: rgba(23, 162, 184, 0.3);
             color: #fff;
-            border-color: #17a2b8;
+            border-color: rgba(23, 162, 184, 0.5);
         }
         [data-bs-theme="dark"] .btn-outline-light {
             color: #f8f9fa;
@@ -4249,7 +4248,7 @@ function getLoginHtml() {
 
         /* Dark Theme Adjustments */
         [data-bs-theme="dark"] body {
-            background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
+            background: transparent !important;
             color: #e2e8f0 !important;
         }
         [data-bs-theme="dark"] h1, [data-bs-theme="dark"] h2, [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4, [data-bs-theme="dark"] h5, [data-bs-theme="dark"] h6 {
@@ -4285,21 +4284,20 @@ function getLoginHtml() {
             color: #ced4da; /* Consistent text color */
         }
         [data-bs-theme="dark"] .progress {
-            background-color: #495057; /* Darker progress bar background */
+            background-color: rgba(255, 255, 255, 0.1);
         }
-        [data-bs-theme="dark"] .progress span { /* Text on progress bar */
-            color: #ffffff !important; /* White text for progress bars in dark mode */
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* Add shadow for readability */
+        [data-bs-theme="dark"] .progress span {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
         [data-bs-theme="dark"] .footer.bg-light {
-            background-color: #343a40 !important; /* Darker footer */
-            border-top: 1px solid #495057;
+            background-color: transparent !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* 已移至统一的底部版权样式中 */
         [data-bs-theme="dark"] .alert-info {
-            background-color: #17a2b8; /* Bootstrap info color, adjust if needed */
+            background-color: rgba(23, 162, 184, 0.3);
             color: #fff;
-            border-color: #17a2b8;
+            border-color: rgba(23, 162, 184, 0.5);
         }
         [data-bs-theme="dark"] .btn-outline-light {
             color: #f8f9fa;
@@ -5324,8 +5322,8 @@ hr.my-4 {
 }
 
 /* 导航栏主题跟随 - 精简版 */
-[data-bs-theme="light"] .navbar { background-color: #f8f9fa !important; }
-[data-bs-theme="dark"] .navbar { background-color: rgba(26, 31, 46, 0.95) !important; }
+[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.7) !important; }
+[data-bs-theme="dark"] .navbar { background-color: rgba(20, 25, 35, 0.7) !important; }
 
 /* 导航栏文字主题跟随 */
 [data-bs-theme="light"] .navbar .nav-link, [data-bs-theme="light"] .navbar a { color: #212529 !important; }
@@ -5712,8 +5710,8 @@ body {
 
     [data-bs-theme="dark"] {
         body {
-            background-color: #212529; /* Bootstrap dark bg */
-            color: #f8f9fa; /* Light text for dark mode */
+            background-color: transparent; /* Let background image show */
+            color: #f8f9fa;
         }
 
         .card {
@@ -5771,16 +5769,16 @@ body {
         }
 
         .form-control {
-            background-color: #495057;
-            color: #ffffff;
-            border-color: #5b6167;
+            background-color: rgba(30, 37, 50, 0.75);
+            color: #e2e8f0;
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .form-control:focus {
-            background-color: #495057;
-            color: #ffffff;
-            border-color: #86b7fe; /* Bootstrap focus color */
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            background-color: rgba(30, 37, 50, 0.8);
+            color: #e2e8f0;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
         }
 
         .btn-outline-secondary {
@@ -5962,8 +5960,8 @@ body {
              color: #fff;
         }
          .footer {
-            background-color: #343a40 !important;
-            color: #ced4da; /* Footer text color for dark mode */
+            background-color: transparent !important;
+            color: #e2e8f0;
         }
         a {
             color: #8ab4f8; /* 示例链接颜色 */
@@ -6616,8 +6614,14 @@ p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
 }
 
 html, body {
-    background: var(--monitor-bg) !important;
+    background: var(--monitor-bg);
     color: var(--monitor-text);
+}
+
+/* 启用自定义背景时 - 让body透明以显示背景图 */
+body.custom-background-enabled,
+body.custom-background-enabled html {
+    background: transparent !important;
 }
 
 body {
@@ -7272,7 +7276,7 @@ body {
 }
 
 [data-bs-theme="dark"] body {
-    background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
+    background: transparent !important;
 }
 
 body {
