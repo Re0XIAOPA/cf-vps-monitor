@@ -3129,7 +3129,16 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
       recordHistoryStmt.bind(id, checkTime, newStatus, newStatusCode, newResponseTime)
     ]);
   } catch (dbError) {
-    // 静默处理数据库更新错误
+    if (String(dbError?.message || dbError).includes('site_status_history')) {
+      try {
+        await db.exec(D1_SCHEMAS.site_status_history);
+        await db.prepare('INSERT INTO site_status_history (site_id, timestamp, status, status_code, response_time_ms) VALUES (?, ?, ?, ?, ?)')
+          .bind(id, checkTime, newStatus, newStatusCode, newResponseTime)
+          .run();
+      } catch (historyRetryError) {
+        // 静默处理历史记录补写错误
+      }
+    }
   }
 }
 
@@ -3221,7 +3230,16 @@ async function checkWebsiteStatusOptimized(site, db, ctx) {
         .bind(id, checkTime, newStatus, newStatusCode, newResponseTime)
     ]);
   } catch (dbError) {
-    // 静默处理数据库更新错误
+    if (String(dbError?.message || dbError).includes('site_status_history')) {
+      try {
+        await db.exec(D1_SCHEMAS.site_status_history);
+        await db.prepare('INSERT INTO site_status_history (site_id, timestamp, status, status_code, response_time_ms) VALUES (?, ?, ?, ?, ?)')
+          .bind(id, checkTime, newStatus, newStatusCode, newResponseTime)
+          .run();
+      } catch (historyRetryError) {
+        // 静默处理历史记录补写错误
+      }
+    }
   }
 }
 
@@ -4022,11 +4040,11 @@ function getIndexHtml() {
 
     <main class="container monitor-shell">
     <!-- 单一主卡片容器 -->
-    <div id="statusDashboardCard">
+    <div id="statusDashboardCard" class="d-none">
         <div class="card shadow-sm">
             <div class="card-body">
                 <!-- 服务器监控部分 -->
-                <section id="serverStatusSection" class="dashboard-section mb-4">
+                <section id="serverStatusSection" class="dashboard-section mb-4 d-none">
                     <h5 class="card-title mb-3">
                         <i class="bi bi-server me-2"></i>服务器监控
                     </h5>
@@ -4073,10 +4091,10 @@ function getIndexHtml() {
                 </section>
 
                 <!-- 分隔线 -->
-                <hr id="statusSectionDivider" class="my-4">
+                <hr id="statusSectionDivider" class="my-4 d-none">
 
                 <!-- 网站监控部分 -->
-                <section id="siteStatusSection" class="dashboard-section">
+                <section id="siteStatusSection" class="dashboard-section d-none">
                     <h5 class="card-title mb-3">
                         <i class="bi bi-globe me-2"></i>网站在线状态
                     </h5>
@@ -4135,7 +4153,7 @@ function getIndexHtml() {
 
     <footer class="footer app-footer py-4">
         <div class="container text-center">
-            <span class="text-muted small">VPS监控面板 &copy; 2025</span>
+            <span class="text-muted small">VPS监控面板 &copy; ${new Date().getFullYear()}</span>
             <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
                 <i class="bi bi-github"></i>
             </a>
@@ -4383,40 +4401,46 @@ function getLoginHtml() {
         </div>
     </nav>
 
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-4">
-                <div class="card">
-                    <div class="card-header">
+    <main class="container login-shell">
+        <div class="login-panel-wrap">
+            <div class="card login-card">
+                <div class="card-header login-card-header">
+                    <div class="login-icon"><i class="bi bi-shield-lock"></i></div>
+                    <div>
+                        <div class="login-kicker">Secure Access</div>
                         <h4 class="card-title mb-0">管理员登录</h4>
                     </div>
-                    <div class="card-body">
+                </div>
+                <div class="card-body login-card-body">
 
-                        <form id="loginForm">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">用户名</label>
-                                <input type="text" class="form-control" id="username" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">密码</label>
-                                <input type="password" class="form-control" id="password" required>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">登录</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="card-footer text-muted">
-                        <small id="defaultCredentialsInfo">加载默认凭据信息中...</small>
-                    </div>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" autocomplete="username" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="password" autocomplete="current-password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary login-submit">
+                                <i class="bi bi-arrow-right-circle"></i>
+                                <span>登录</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer login-card-footer text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    <small id="defaultCredentialsInfo">加载默认凭据信息中...</small>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <footer class="footer app-footer py-4">
         <div class="container text-center">
-            <span class="text-muted small">VPS监控面板 &copy; 2025</span>
+            <span class="text-muted small">VPS监控面板 &copy; ${new Date().getFullYear()}</span>
             <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
                 <i class="bi bi-github"></i>
             </a>
@@ -4931,7 +4955,7 @@ function getAdminHtml() {
 
     <footer class="footer app-footer py-4">
         <div class="container text-center">
-            <span class="text-muted small">VPS监控面板 &copy; 2025</span>
+            <span class="text-muted small">VPS监控面板 &copy; ${new Date().getFullYear()}</span>
             <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
                 <i class="bi bi-github"></i>
             </a>
@@ -7168,14 +7192,14 @@ body {
 }
 
 [data-bs-theme="dark"] {
-    --apple-glass: rgba(15, 23, 42, 0.64);
-    --apple-glass-strong: rgba(17, 24, 39, 0.78);
-    --apple-glass-border: rgba(255, 255, 255, 0.12);
-    --apple-line: rgba(226, 232, 240, 0.14);
+    --apple-glass: rgba(8, 8, 9, 0.82);
+    --apple-glass-strong: rgba(16, 16, 18, 0.92);
+    --apple-glass-border: rgba(255, 255, 255, 0.08);
+    --apple-line: rgba(255, 255, 255, 0.1);
     --apple-text: #f8fafc;
-    --apple-muted: #cbd5e1;
-    --apple-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
-    --apple-shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.24);
+    --apple-muted: #a1a1aa;
+    --apple-shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
+    --apple-shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.48);
 }
 
 html,
@@ -7185,7 +7209,7 @@ body {
 }
 
 [data-bs-theme="dark"] body {
-    background: linear-gradient(135deg, rgba(11, 18, 32, 0.98) 0%, rgba(15, 23, 42, 0.96) 48%, rgba(24, 22, 45, 0.98) 100%) !important;
+    background: #050505 !important;
 }
 
 body {
@@ -7209,8 +7233,8 @@ body {
 }
 
 [data-bs-theme="dark"] .navbar {
-    background: rgba(15, 23, 42, 0.62) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(14, 14, 15, 0.86) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .navbar .container {
@@ -7241,6 +7265,16 @@ body {
     box-shadow: 0 8px 18px rgba(0, 122, 255, 0.22);
 }
 
+.brand-mark i {
+    display: inline-block;
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.brand-mark::before {
+    content: none;
+}
+
 .brand-text {
     letter-spacing: -0.02em;
 }
@@ -7254,7 +7288,7 @@ body {
 }
 
 .navbar-brand:not(:has(.brand-text))::before {
-    content: "\\F4E1";
+    content: "⌁";
     width: 30px;
     height: 30px;
     display: inline-flex;
@@ -7262,8 +7296,8 @@ body {
     justify-content: center;
     border-radius: 10px;
     color: #fff;
-    font-family: "bootstrap-icons";
-    font-size: 1rem;
+    font-size: 1.12rem;
+    font-weight: 900;
     line-height: 1;
     background: linear-gradient(135deg, var(--apple-blue), var(--apple-blue-2));
     box-shadow: 0 8px 18px rgba(0, 122, 255, 0.22);
@@ -7318,7 +7352,8 @@ body {
 
 [data-bs-theme="dark"] .navbar .btn-outline-light,
 [data-bs-theme="dark"] .navbar .nav-link {
-    background: rgba(15, 23, 42, 0.58) !important;
+    background: rgba(24, 24, 27, 0.82) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .navbar .btn-outline-light:hover,
@@ -7343,6 +7378,11 @@ body {
     -webkit-backdrop-filter: saturate(180%) blur(32px);
 }
 
+[data-bs-theme="dark"] .card.shadow-sm {
+    background: rgba(8, 8, 9, 0.84) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 .card-body {
     padding: 1.35rem !important;
 }
@@ -7360,6 +7400,26 @@ body {
     background: rgba(255, 255, 255, 0.72) !important;
     color: var(--apple-blue) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 26px rgba(0, 122, 255, 0.12);
+}
+
+[data-bs-theme="dark"] .card-title i {
+    background: rgba(28, 28, 31, 0.92) !important;
+    color: #8ab4ff !important;
+    box-shadow: none;
+}
+
+.alert-info {
+    border: 1px solid rgba(129, 151, 183, 0.16) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+    color: var(--apple-muted) !important;
+    font-weight: 800;
+}
+
+[data-bs-theme="dark"] .alert-info {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    background: rgba(20, 20, 22, 0.94) !important;
+    color: #d4d4d8 !important;
 }
 
 .table-responsive {
@@ -7388,6 +7448,27 @@ body {
 
 .table td {
     border-color: rgba(129, 151, 183, 0.14) !important;
+}
+
+[data-bs-theme="dark"] .table-responsive {
+    background: rgba(14, 14, 16, 0.92) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), var(--apple-shadow-soft);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.025);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.045);
+}
+
+[data-bs-theme="dark"] .table thead th {
+    background: rgba(24, 24, 27, 0.92) !important;
+    color: #a1a1aa !important;
+}
+
+[data-bs-theme="dark"] .table td {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+    color: #d4d4d8 !important;
 }
 
 .btn {
@@ -7422,6 +7503,114 @@ body {
     background: rgba(255, 255, 255, 0.62) !important;
     color: var(--apple-text) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.login-shell {
+    flex: 1 0 auto;
+    min-height: calc(100vh - 154px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.login-panel-wrap {
+    width: min(100%, 430px);
+}
+
+.login-card {
+    overflow: hidden;
+    border: 1px solid var(--apple-glass-border) !important;
+    border-radius: 30px !important;
+    background: rgba(255, 255, 255, 0.62) !important;
+    box-shadow: 0 26px 80px rgba(31, 41, 55, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: saturate(180%) blur(34px);
+    -webkit-backdrop-filter: saturate(180%) blur(34px);
+}
+
+.login-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.35rem 1.45rem 0.85rem !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.login-icon {
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 46px;
+    border-radius: 16px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--apple-blue), var(--apple-blue-2));
+    box-shadow: 0 14px 30px rgba(0, 122, 255, 0.24);
+}
+
+.login-kicker {
+    color: var(--apple-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+.login-card-body {
+    padding: 0.75rem 1.45rem 1.25rem !important;
+}
+
+.login-card .form-label {
+    margin-bottom: 0.45rem;
+    color: var(--apple-muted);
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.login-card .form-control {
+    min-height: 52px;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.login-card .form-control:focus {
+    border-color: rgba(0, 122, 255, 0.42) !important;
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.login-submit {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.login-card-footer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.95rem 1.45rem 1.25rem !important;
+    border-top: 1px solid rgba(129, 151, 183, 0.14) !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+    color: var(--apple-muted) !important;
+}
+
+.login-card-footer i {
+    margin-top: 0.1rem;
+    color: var(--apple-blue);
+}
+
+[data-bs-theme="dark"] .login-card {
+    background: rgba(15, 23, 42, 0.62) !important;
+}
+
+[data-bs-theme="dark"] .login-card .form-control,
+[data-bs-theme="dark"] .login-card-footer {
+    background: rgba(15, 23, 42, 0.5) !important;
 }
 
 .section-display-switch .form-check {
@@ -7487,6 +7676,11 @@ body {
     font-weight: 700 !important;
 }
 
+[data-bs-theme="dark"] .empty-table-cell {
+    color: #d4d4d8 !important;
+    background: rgba(24, 24, 27, 0.82) !important;
+}
+
 .mobile-server-card,
 .mobile-site-card {
     border: 1px solid var(--apple-glass-border) !important;
@@ -7502,6 +7696,12 @@ body {
     color: var(--apple-muted) !important;
     background: transparent !important;
     border-top: 1px solid rgba(129, 151, 183, 0.16) !important;
+}
+
+[data-bs-theme="dark"] .app-footer,
+[data-bs-theme="dark"] .footer.fixed-bottom {
+    background: rgba(14, 14, 15, 0.92) !important;
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .app-footer .text-muted,
