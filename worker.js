@@ -4041,7 +4041,7 @@ function getIndexHtml() {
                 <!-- 服务器监控部分 -->
                 <section id="serverStatusSection" class="dashboard-section mb-4 d-none">
                     <h5 class="card-title mb-3">
-                        <i class="bi bi-server me-2"></i>服务器监控
+                        <i class="bi bi-activity me-2"></i>服务器监控
                     </h5>
 
                     <div id="noServers" class="alert alert-info d-none">
@@ -4091,7 +4091,7 @@ function getIndexHtml() {
                 <!-- 网站监控部分 -->
                 <section id="siteStatusSection" class="dashboard-section d-none">
                     <h5 class="card-title mb-3">
-                        <i class="bi bi-globe me-2"></i>网站在线状态
+                        <i class="bi bi-activity me-2"></i>网站在线状态
                     </h5>
 
                     <div id="noSites" class="alert alert-info d-none">
@@ -4551,7 +4551,7 @@ function getAdminHtml() {
                     <div class="admin-header-row mb-3">
                         <div class="admin-header-title">
                             <h5 class="card-title mb-0">
-                                <i class="bi bi-server me-2"></i>服务器管理
+                                <i class="bi bi-activity me-2"></i>服务器管理
                             </h5>
                             <div class="section-display-switch mt-2">
                                 <div class="form-check form-switch">
@@ -4642,7 +4642,7 @@ function getAdminHtml() {
                     <div class="admin-header-row mb-3">
                         <div class="admin-header-title">
                             <h5 class="card-title mb-0">
-                                <i class="bi bi-globe me-2"></i>网站监控管理
+                                <i class="bi bi-activity me-2"></i>网站监控管理
                             </h5>
                             <div class="section-display-switch mt-2">
                                 <div class="form-check form-switch">
@@ -6792,13 +6792,13 @@ body {
 }
 
 .btn-primary {
-    background: var(--monitor-primary);
-    border-color: var(--monitor-primary);
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: #16a34a;
 }
 
 .btn-success {
-    background: var(--monitor-accent);
-    border-color: var(--monitor-accent);
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-color: #16a34a;
 }
 
 .form-control,
@@ -7121,9 +7121,9 @@ body {
 .btn-success,
 .btn-info {
     border: none;
-    background: linear-gradient(135deg, var(--monitor-primary), var(--monitor-accent)) !important;
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
     color: #fff !important;
-    box-shadow: 0 10px 24px rgba(41, 98, 255, 0.18);
+    box-shadow: 0 10px 24px rgba(34, 197, 94, 0.2);
 }
 
 .btn-outline-secondary,
@@ -7416,6 +7416,14 @@ body {
     color: currentColor !important;
 }
 
+[data-bs-theme="light"] .navbar i {
+    color: #212529 !important;
+}
+
+[data-bs-theme="dark"] .navbar i {
+    color: #ffffff !important;
+}
+
 [data-bs-theme="dark"] .navbar .btn-outline-light,
 [data-bs-theme="dark"] .navbar .nav-link {
     background: rgba(14, 14, 16, 0.9) !important;
@@ -7486,6 +7494,13 @@ body {
     color: var(--apple-text) !important;
     font-size: 1.2rem !important;
     font-weight: 800 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.88) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 18px rgba(31, 41, 55, 0.08);
 }
 
 .card-title i {
@@ -7497,8 +7512,14 @@ body {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 26px rgba(0, 122, 255, 0.12);
 }
 
+[data-bs-theme="dark"] .card-title {
+    color: #e2e8f0 !important;
+    background: rgba(28, 28, 31, 0.82) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 [data-bs-theme="dark"] .card-title i {
-    background: rgba(28, 28, 31, 0.92) !important;
+    background: rgba(15, 20, 30, 0.9) !important;
     color: #8ab4ff !important;
     box-shadow: none;
 }
@@ -7562,7 +7583,7 @@ body {
 }
 
 [data-bs-theme="dark"] .table thead th {
-    background: rgba(20, 25, 35, 0.95) !important;
+    background: rgba(15, 20, 30, 0.65) !important;
     color: #e2e8f0 !important;
 }
 
@@ -7579,10 +7600,10 @@ body {
 .btn-primary,
 .btn-success,
 .btn-info {
-    background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple)) !important;
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
     color: #ffffff !important;
     border: none !important;
-    box-shadow: 0 12px 30px rgba(0, 122, 255, 0.22);
+    box-shadow: 0 12px 30px rgba(34, 197, 94, 0.25);
 }
 
 .btn-outline-secondary,
@@ -7875,7 +7896,7 @@ body.custom-background-enabled .login-card {
 
 .history-tooltip.show {
     opacity: 1;
-    transform: translate(-50%, -14px) scale(1);
+    transform: translate(-50%, calc(-100% - 10px)) scale(1);
 }
 
 [data-bs-theme="dark"] .history-tooltip {
@@ -8575,7 +8596,7 @@ function renderMobileServerCards(allStatuses) {
     if (!allStatuses || allStatuses.length === 0) {
         mobileContainer.innerHTML = \`
             <div class="text-center p-4">
-                <i class="bi bi-server text-muted" style="font-size: 3rem;"></i>
+                <i class="bi bi-activity text-muted" style="font-size: 3rem;"></i>
                 <div class="mt-3 text-muted">
                     <h6>暂无服务器数据</h6>
                     <small>请登录管理后台添加服务器</small>
@@ -8731,7 +8752,7 @@ function renderMobileSiteCards(sites) {
     if (!sites || sites.length === 0) {
         mobileContainer.innerHTML = \`
             <div class="text-center p-4">
-                <i class="bi bi-globe text-muted" style="font-size: 3rem;"></i>
+                <i class="bi bi-activity text-muted" style="font-size: 3rem;"></i>
                 <div class="mt-3 text-muted">
                     <h6>暂无监控网站数据</h6>
                     <small>请登录管理后台添加监控网站</small>
