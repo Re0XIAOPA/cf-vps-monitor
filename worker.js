@@ -4003,34 +4003,8 @@ function getIndexHtml() {
     <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <svg class="me-2" width="32" height="32" viewBox="0 0 32 32">
-                    <defs>
-                        <radialGradient id="navBg1" cx="0.3" cy="0.3">
-                            <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
-                            <stop offset="100%" stop-color="#0277bd" stop-opacity="0.8"/>
-                        </radialGradient>
-                        <linearGradient id="navEcg1" x1="0%" x2="100%">
-                            <stop offset="0%" stop-color="#f08"/>
-                            <stop offset="50%" stop-color="#0f8"/>
-                            <stop offset="100%" stop-color="#80f"/>
-                        </linearGradient>
-                    </defs>
-                    <circle cx="16" cy="16" r="15" fill="url(#navBg1)" stroke="#0277bd" stroke-width="1.5"/>
-                    <circle cx="16" cy="16" r="13" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>
-                    <line x1="4" y1="16" x2="28" y2="16" stroke="#b3e5fc" stroke-width="0.5" opacity="0.8"/>
-                    <path id="navP1" d="M4 16L8 16L9 15L10 17L11 14L12 18L13 10L14 22L15 16L28 16" fill="none" stroke="url(#navEcg1)" stroke-width="2.8"/>
-                    <path d="M4 16L8 16L9 15L10 17L11 14L12 18L13 10L14 22L15 16L28 16" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.7"/>
-                    <circle r="1.5" fill="#fff">
-                        <animateMotion dur="2s" repeatCount="indefinite">
-                            <mpath href="#navP1"/>
-                        </animateMotion>
-                    </circle>
-                    <circle cx="16" cy="16" r="8" fill="none" stroke="#f08" stroke-width="0.5" opacity="0.6">
-                        <animate attributeName="r" values="8;12;8" dur="3s" repeatCount="indefinite"/>
-                        <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </svg>
-                VPS监控面板
+                <span class="brand-mark"><i class="bi bi-activity"></i></span>
+                <span class="brand-text">Monitor</span>
             </a>
             <div class="d-flex align-items-center">
                 <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light btn-sm me-2" title="GitHub Repository">
@@ -4039,8 +4013,8 @@ function getIndexHtml() {
                 <button id="themeToggler" class="btn btn-outline-light btn-sm me-2" title="切换主题">
                     <i class="bi bi-moon-stars-fill"></i>
                 </button>
-                <a class="nav-link text-light" id="adminAuthLink" href="/login.html" style="white-space: nowrap;" title="管理员登录">
-                    <i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>
+                <a class="nav-link text-light" id="adminAuthLink" href="/login.html" style="white-space: nowrap;" title="后台">
+                    <i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>
                 </a>
             </div>
         </div>
@@ -7222,7 +7196,7 @@ body {
 
 .navbar {
     height: auto !important;
-    min-height: 68px !important;
+    min-height: 54px !important;
     background: rgba(255, 255, 255, 0.56) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.75) !important;
     box-shadow: 0 1px 0 rgba(129, 151, 183, 0.12);
@@ -7240,23 +7214,72 @@ body {
 }
 
 .navbar .container {
-    min-height: 68px !important;
+    min-height: 54px !important;
+}
+
+.navbar .d-flex.align-items-center {
+    gap: 0.45rem !important;
+    flex-wrap: nowrap !important;
 }
 
 .navbar-brand {
     color: var(--apple-text) !important;
     font-weight: 800 !important;
+    gap: 0.55rem;
+    font-size: 1.02rem;
 }
 
-.navbar-brand svg {
-    width: 34px;
-    height: 34px;
-    filter: drop-shadow(0 10px 24px rgba(0, 122, 255, 0.22));
+.brand-mark {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--apple-blue), var(--apple-blue-2));
+    box-shadow: 0 8px 18px rgba(0, 122, 255, 0.22);
+}
+
+.brand-text {
+    letter-spacing: -0.02em;
+}
+
+.navbar-brand:not(:has(.brand-text)) {
+    font-size: 0 !important;
+}
+
+.navbar-brand:not(:has(.brand-text)) svg {
+    display: none !important;
+}
+
+.navbar-brand:not(:has(.brand-text))::before {
+    content: "\\F4E1";
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: #fff;
+    font-family: "bootstrap-icons";
+    font-size: 1rem;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--apple-blue), var(--apple-blue-2));
+    box-shadow: 0 8px 18px rgba(0, 122, 255, 0.22);
+}
+
+.navbar-brand:not(:has(.brand-text))::after {
+    content: "Monitor";
+    color: var(--apple-text);
+    font-size: 1.02rem;
+    font-weight: 800;
+    line-height: 1;
 }
 
 .navbar .btn-outline-light,
 .navbar .nav-link {
-    min-height: 38px;
+    min-height: 34px;
     border: 1px solid var(--apple-glass-border) !important;
     border-radius: 999px !important;
     color: var(--apple-text) !important;
@@ -7264,6 +7287,33 @@ body {
     box-shadow: 0 8px 24px rgba(31, 41, 55, 0.07);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
+}
+
+.navbar .btn-outline-light {
+    width: 36px;
+    height: 36px;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+}
+
+.navbar .nav-link {
+    min-height: 36px;
+    padding: 0.35rem 0.7rem !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.navbar .btn-outline-light.me-2,
+.navbar .nav-link.me-2 {
+    margin-right: 0 !important;
+}
+
+.navbar i {
+    color: currentColor !important;
 }
 
 [data-bs-theme="dark"] .navbar .btn-outline-light,
@@ -7400,16 +7450,42 @@ body {
 .badge.bg-danger { background-color: var(--apple-red) !important; }
 
 .history-bar-container {
-    background: rgba(255, 255, 255, 0.46) !important;
-    border: 1px solid var(--apple-line);
-    border-radius: 12px !important;
-    padding: 4px !important;
+    height: 20px !important;
+    gap: 3px !important;
+    background: rgba(129, 151, 183, 0.1) !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    padding: 3px !important;
+    transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.history-bar-container:hover {
+    background: rgba(129, 151, 183, 0.18) !important;
+    box-shadow: inset 0 0 0 1px rgba(129, 151, 183, 0.16);
+}
+
+.history-bar {
+    width: 7px !important;
+    border-radius: 999px !important;
+    opacity: 0.95;
+    transition: transform 0.14s ease, opacity 0.14s ease;
+}
+
+.history-bar:hover {
+    transform: scaleY(1.25);
+    opacity: 1;
 }
 
 .history-bar-up { background-color: var(--apple-green) !important; }
 .history-bar-warning { background-color: var(--apple-yellow) !important; }
 .history-bar-down { background-color: var(--apple-red) !important; }
 .history-bar-pending { background-color: rgba(129, 151, 183, 0.48) !important; }
+
+.empty-table-cell {
+    padding: 1.2rem !important;
+    color: var(--apple-muted) !important;
+    font-weight: 700 !important;
+}
 
 .mobile-server-card,
 .mobile-site-card {
@@ -7445,6 +7521,36 @@ body {
 
     .card-body {
         padding: 1rem !important;
+    }
+
+    .navbar .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+    }
+
+    .brand-mark {
+        width: 30px;
+        height: 30px;
+    }
+
+    .navbar .btn-outline-light {
+        width: 34px;
+        height: 34px;
+        flex-basis: 34px;
+    }
+
+    .navbar .nav-link {
+        min-height: 34px;
+        padding: 0.32rem 0.62rem !important;
+        font-size: 0.92rem;
+    }
+
+    .navbar .d-flex.align-items-center {
+        gap: 0.45rem !important;
     }
 }
 
@@ -7785,8 +7891,8 @@ async function updateAdminLink() {
         const token = localStorage.getItem('auth_token');
         if (!token) {
             // Not logged in (no token)
-            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>';
-            adminLink.title = '管理员登录';
+            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>';
+            adminLink.title = '后台';
             adminLink.href = '/login.html';
             return;
         }
@@ -7794,20 +7900,20 @@ async function updateAdminLink() {
         const data = await publicApiRequest('/api/auth/status');
         if (data.authenticated) {
             // Logged in
-            adminLink.innerHTML = '<i class="bi bi-speedometer2 me-1"></i><span class="nav-link-label">管理后台</span>';
-            adminLink.title = '管理后台';
+            adminLink.innerHTML = '<i class="bi bi-speedometer2 me-1"></i><span class="nav-link-label">后台</span>';
+            adminLink.title = '后台';
             adminLink.href = '/admin.html';
         } else {
             // Invalid token or not authenticated
-            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>';
-            adminLink.title = '管理员登录';
+            adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>';
+            adminLink.title = '后台';
             adminLink.href = '/login.html';
             localStorage.removeItem('auth_token'); // Clean up invalid token
         }
     } catch (error) {
                 // Network error, assume not logged in
-        adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">管理员登录</span>';
-        adminLink.title = '管理员登录';
+        adminLink.innerHTML = '<i class="bi bi-person-lock me-1"></i><span class="nav-link-label">后台</span>';
+        adminLink.title = '后台';
         adminLink.href = '/login.html';
     }
 }
@@ -7913,9 +8019,11 @@ async function loadAllServerStatuses() {
         const serverTableBody = document.getElementById('serverTableBody');
 
         if (allStatuses.length === 0) {
-            hidePublicSectionWhenEmpty('serverStatusSection');
-            noServersAlert.classList.add('d-none');
-            serverTableBody.innerHTML = '';
+            document.getElementById('serverStatusSection')?.classList.remove('d-none');
+            document.getElementById('statusSectionDivider')?.classList.toggle('d-none', document.getElementById('siteStatusSection')?.classList.contains('d-none'));
+            updatePublicDashboardCardVisibility();
+            noServersAlert.classList.remove('d-none');
+            serverTableBody.innerHTML = '<tr><td colspan="11" class="text-center empty-table-cell">暂无服务器数据</td></tr>';
             // Remove any existing detail rows if the server list becomes empty
             removeAllDetailRows();
             // 同时更新移动端卡片容器
@@ -8415,9 +8523,11 @@ async function loadAllSiteStatuses() {
         const siteStatusTableBody = document.getElementById('siteStatusTableBody');
 
         if (sites.length === 0) {
-            hidePublicSectionWhenEmpty('siteStatusSection');
-            noSitesAlert.classList.add('d-none');
-            siteStatusTableBody.innerHTML = ''; // Colspan updated
+            document.getElementById('siteStatusSection')?.classList.remove('d-none');
+            document.getElementById('statusSectionDivider')?.classList.toggle('d-none', document.getElementById('serverStatusSection')?.classList.contains('d-none'));
+            updatePublicDashboardCardVisibility();
+            noSitesAlert.classList.remove('d-none');
+            siteStatusTableBody.innerHTML = '<tr><td colspan="6" class="text-center empty-table-cell">暂无监控网站数据</td></tr>'; // Colspan updated
             // 同时更新移动端卡片容器
             renderMobileSiteCards([]);
             return;
