@@ -3931,36 +3931,36 @@ function getIndexHtml() {
             background-color: #f8f9fa;
         }
         [data-bs-theme="dark"] .card {
-            background-color: #343a40;
-            border: 1px solid #495057;
+            background-color: #232b3d;
+            border: 1px solid #3a4556;
         }
         [data-bs-theme="dark"] .card-header {
-            background-color: #495057;
-            border-bottom: 1px solid #5b6167;
+            background-color: #2a3548;
+            border-bottom: 1px solid #3a4556;
         }
         [data-bs-theme="dark"] .modal-content {
-            background-color: #343a40;
-            color: #ffffff; /* White modal text */
+            background-color: #1e2433;
+            color: #e2e8f0;
         }
         [data-bs-theme="dark"] .modal-header {
-            border-bottom-color: #495057;
+            border-bottom-color: #2d3748;
         }
         [data-bs-theme="dark"] .modal-footer {
-            border-top-color: #495057;
+            border-top-color: #2d3748;
         }
         [data-bs-theme="dark"] .form-control {
-            background-color: #495057;
-            color: #ffffff; /* White form control text */
-            border-color: #5b6167;
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #3a4556;
         }
         [data-bs-theme="dark"] .form-control:focus {
-            background-color: #495057;
-            color: #ffffff; /* White form control text on focus */
-            border-color: #86b7fe; /* Bootstrap focus color */
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
         }
         [data-bs-theme="dark"] .form-label {
-            color: #adb5bd;
+            color: #94a3b8;
         }
         [data-bs-theme="dark"] .text-danger { /* Ensure custom text-danger is visible */
             color: #d4d4d8 !important;
@@ -4309,36 +4309,36 @@ function getLoginHtml() {
             background-color: #f8f9fa;
         }
         [data-bs-theme="dark"] .card {
-            background-color: #343a40;
-            border: 1px solid #495057;
+            background-color: #232b3d;
+            border: 1px solid #3a4556;
         }
         [data-bs-theme="dark"] .card-header {
-            background-color: #495057;
-            border-bottom: 1px solid #5b6167;
+            background-color: #2a3548;
+            border-bottom: 1px solid #3a4556;
         }
         [data-bs-theme="dark"] .modal-content {
-            background-color: #343a40;
-            color: #ffffff; /* White modal text */
+            background-color: #1e2433;
+            color: #e2e8f0;
         }
         [data-bs-theme="dark"] .modal-header {
-            border-bottom-color: #495057;
+            border-bottom-color: #2d3748;
         }
         [data-bs-theme="dark"] .modal-footer {
-            border-top-color: #495057;
+            border-top-color: #2d3748;
         }
         [data-bs-theme="dark"] .form-control {
-            background-color: #495057;
-            color: #ffffff; /* White form control text */
-            border-color: #5b6167;
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #3a4556;
         }
         [data-bs-theme="dark"] .form-control:focus {
-            background-color: #495057;
-            color: #ffffff; /* White form control text on focus */
-            border-color: #86b7fe; /* Bootstrap focus color */
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
         }
         [data-bs-theme="dark"] .form-label {
-            color: #adb5bd;
+            color: #94a3b8;
         }
         [data-bs-theme="dark"] .text-danger { /* Ensure custom text-danger is visible */
             color: #d4d4d8 !important;
@@ -5047,15 +5047,15 @@ body {
     -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-/* Modal 样式 - 简洁版 */
+/* Modal 样式 - 实色不透明版 */
 .modal-content {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: #ffffff !important;
     border-radius: 16px !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
 }
 
 .modal-header {
-    border-bottom: 1px solid rgba(129, 151, 183, 0.2) !important;
+    border-bottom: 1px solid #e5e7eb !important;
     border-radius: 16px 16px 0 0 !important;
     padding: 1rem 1.25rem !important;
 }
@@ -5066,7 +5066,7 @@ body {
 }
 
 .modal-footer {
-    border-top: 1px solid rgba(129, 151, 183, 0.2) !important;
+    border-top: 1px solid #e5e7eb !important;
     padding: 0.875rem 1.25rem !important;
 }
 
@@ -5300,16 +5300,16 @@ hr.my-4 {
 
 /* 暗色主题下的单一卡片样式 */
 [data-bs-theme="dark"] .card.shadow-sm {
-    background-color: var(--bs-dark);
+    background-color: #232b3d;
     box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3) !important;
 }
 
 [data-bs-theme="dark"] .card-title {
-    color: #86b7fe;
+    color: #60a5fa;
 }
 
 [data-bs-theme="dark"] .card-title i {
-    color: #86b7fe;
+    color: #60a5fa;
 }
 
 /* VPS监控面板标题 - 蓝色加粗 */
@@ -5745,14 +5745,14 @@ body {
         }
 
         .modal-content {
-            background-color: rgba(30, 35, 45, 0.95) !important;
+            background-color: #1e2433 !important;
             color: #e2e8f0;
             border-radius: 16px !important;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
         }
 
         .modal-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-bottom: 1px solid #2d3748 !important;
             border-radius: 16px 16px 0 0 !important;
             padding: 1rem 1.25rem !important;
         }
@@ -5764,7 +5764,7 @@ body {
         }
 
         .modal-footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-top: 1px solid #2d3748 !important;
             padding: 0.875rem 1.25rem !important;
         }
 
@@ -5782,85 +5782,85 @@ body {
         }
 
         .btn-outline-secondary {
-             color: #adb5bd;
-             border-color: #6c757d;
+             color: #94a3b8;
+             border-color: #3a4556;
         }
         .btn-outline-secondary:hover {
-             color: #fff;
-             background-color: #6c757d;
-             border-color: #6c757d;
+             color: #1e2433;
+             background-color: #60a5fa;
+             border-color: #60a5fa;
         }
 
         .navbar {
-            background-color: #101010ff !important; /* Ensure override Bootstrap default */
+            background-color: #1a1f2e !important;
         }
 
         /* 暗色主题移动端卡片样式 */
         .mobile-server-card, .mobile-site-card {
-            background: var(--bs-dark, #101010ff);
-            border-color: var(--bs-border-color, #495057);
+            background: #232b3d;
+            border-color: #3a4556;
         }
 
         .mobile-card-header {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-bottom-color: var(--bs-border-color, #495057);
+            background-color: #2a3548;
+            border-bottom-color: #3a4556;
         }
 
         .mobile-card-title {
-            color: #ffffff !important;
+            color: #e2e8f0 !important;
         }
 
         .mobile-card-label {
-            color: #ced4da !important;
+            color: #94a3b8 !important;
         }
 
         .mobile-card-value {
-            color: #ffffff !important;
+            color: #e2e8f0 !important;
         }
 
 
 
         .mobile-card-row {
-            border-bottom-color: rgba(255, 255, 255, 0.08);
+            border-bottom-color: #3a4556;
         }
 
         .mobile-card-two-columns {
-            border-bottom-color: rgba(255, 255, 255, 0.08);
+            border-bottom-color: #3a4556;
         }
 
         .mobile-card-column-item .mobile-card-label {
-            color: #ced4da !important;
+            color: #94a3b8 !important;
         }
 
         .mobile-card-column-item .mobile-card-value {
-            color: #ffffff !important;
+            color: #e2e8f0 !important;
         }
 
         .mobile-history-label {
-            color: #ced4da !important;
+            color: #94a3b8 !important;
         }
 
         /* 暗色主题下的空状态和错误状态文字 */
         .mobile-card-container .text-muted {
-            color: #ced4da !important;
+            color: #94a3b8 !important;
         }
 
         .mobile-card-container .text-danger {
-            color: #ff6b6b !important;
+            color: #f87171 !important;
         }
 
         .mobile-card-container h6 {
-            color: #ffffff !important;
+            color: #e2e8f0 !important;
         }
 
         .mobile-card-container small {
-            color: #adb5bd !important;
+            color: #94a3b8 !important;
         }
 
         /* 暗色主题下的移动端按钮优化 */
         .mobile-card-body .btn-outline-primary {
-            color: #6ea8fe !important;
-            border-color: #6ea8fe !important;
+            color: #60a5fa !important;
+            border-color: #60a5fa !important;
         }
 
         .mobile-card-body .btn-outline-primary:hover {
@@ -6065,32 +6065,30 @@ body.custom-background-enabled::before {
 
 /* 启用自定义背景时的页面元素透明度调整 */
 body.custom-background-enabled .navbar {
-    background-color: rgba(248, 249, 250, calc(var(--page-opacity) * 0.7 + 0.25)) !important;
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    backdrop-filter: saturate(120%) blur(8px);
+    -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 body.custom-background-enabled .card {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.7 + 0.25)) !important;
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    backdrop-filter: saturate(120%) blur(8px);
+    -webkit-backdrop-filter: saturate(120%) blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 body.custom-background-enabled .card-header {
-    background-color: rgba(0, 0, 0, calc(0.03 * var(--page-opacity))) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, calc(0.125 * var(--page-opacity)));
+    background-color: rgba(0, 0, 0, calc(0.02 * var(--page-opacity))) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, calc(0.08 * var(--page-opacity)));
 }
 
 body.custom-background-enabled .modal-content {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background-color: #ffffff !important;
 }
 
 body.custom-background-enabled .footer {
-    background-color: rgba(248, 249, 250, var(--page-opacity)) !important;
-    backdrop-filter: blur(5px);
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.5 + 0.15)) !important;
+    backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(5px);
 }
 
@@ -6234,33 +6232,31 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的自定义背景样式 */
 [data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.6 + 0.35)) !important;
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    backdrop-filter: saturate(120%) blur(8px);
+    -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.6 + 0.35)) !important;
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
-    border-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    backdrop-filter: saturate(120%) blur(8px);
+    -webkit-backdrop-filter: saturate(120%) blur(8px);
+    border-color: rgba(255, 255, 255, 0.06);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card-header {
-    background-color: rgba(35, 42, 55, calc(0.7 * var(--page-opacity))) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(30, 37, 50, calc(0.5 * var(--page-opacity))) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .modal-content {
-    background-color: rgba(30, 35, 45, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(28px);
-    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    background-color: #1e2433 !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .footer {
-    background-color: rgba(30, 35, 45, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    backdrop-filter: saturate(120%) blur(8px);
+    -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 /* 暗色主题下的表格透明度调整 - 避免与卡片背景叠加 */
@@ -6373,13 +6369,13 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-server-card,
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.6 + 0.35)) !important;
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.4 + 0.2)) !important;
+    backdrop-filter: saturate(120%) blur(8px);
+    -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-card-header {
-    background-color: rgba(255, 255, 255, calc(0.05 * var(--page-opacity))) !important;
+    background-color: rgba(30, 37, 50, calc(0.5 * var(--page-opacity))) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .table-striped > tbody > tr:nth-of-type(odd) > * {
@@ -7006,7 +7002,7 @@ body {
 }
 
 [data-bs-theme="dark"] .card.shadow-sm {
-    background: rgba(17, 28, 49, 0.9);
+    background: #232b3d;
 }
 
 .card-body {
@@ -7098,7 +7094,7 @@ body {
 [data-bs-theme="dark"] .btn-outline-primary,
 [data-bs-theme="dark"] .btn-outline-info,
 [data-bs-theme="dark"] .btn-outline-danger {
-    background: var(--monitor-surface-strong);
+    background: #2d3748;
 }
 
 .form-control {
