@@ -3949,12 +3949,12 @@ function getIndexHtml() {
             border-top-color: #2d3748;
         }
         [data-bs-theme="dark"] .form-control {
-            background-color: rgba(30, 37, 50, 0.75);
+            background-color: rgba(30, 37, 50, 0.88);
             color: #e2e8f0;
             border-color: rgba(255, 255, 255, 0.15);
         }
         [data-bs-theme="dark"] .form-control:focus {
-            background-color: rgba(30, 37, 50, 0.8);
+            background-color: rgba(35, 42, 55, 0.92);
             color: #e2e8f0;
             border-color: #60a5fa;
             box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
@@ -4327,12 +4327,12 @@ function getLoginHtml() {
             border-top-color: rgba(255, 255, 255, 0.1);
         }
         [data-bs-theme="dark"] .form-control {
-            background-color: rgba(30, 37, 50, 0.75);
+            background-color: rgba(30, 37, 50, 0.88);
             color: #e2e8f0;
             border-color: rgba(255, 255, 255, 0.15);
         }
         [data-bs-theme="dark"] .form-control:focus {
-            background-color: rgba(30, 37, 50, 0.8);
+            background-color: rgba(35, 42, 55, 0.92);
             color: #e2e8f0;
             border-color: #60a5fa;
             box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
@@ -5769,13 +5769,13 @@ body {
         }
 
         .form-control {
-            background-color: rgba(30, 37, 50, 0.75);
+            background-color: rgba(30, 37, 50, 0.88);
             color: #e2e8f0;
             border-color: rgba(255, 255, 255, 0.15);
         }
 
         .form-control:focus {
-            background-color: rgba(30, 37, 50, 0.8);
+            background-color: rgba(35, 42, 55, 0.92);
             color: #e2e8f0;
             border-color: #60a5fa;
             box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
@@ -6107,16 +6107,16 @@ body.custom-background-enabled .table td {
     background-color: transparent !important;
 }
 
-/* 输入框完全透明化 - 方案A */
+/* 输入框 - 保证可读性 */
 body.custom-background-enabled .form-control {
-    background-color: transparent !important;
+    background-color: rgba(255, 255, 255, 0.92) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border: 1px solid rgba(0, 0, 0, 0.15) !important;
 }
 
 body.custom-background-enabled .form-control:focus {
-    background-color: transparent !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
     border: 1px solid rgba(13, 110, 253, 0.6) !important;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important;
 }
@@ -6274,9 +6274,9 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
     background-color: transparent !important;
 }
 
-/* 暗色主题下的输入框完全透明化 - 方案A */
+/* 暗色主题下的输入框 - 保证可读性 */
 [data-bs-theme="dark"] body.custom-background-enabled .form-control {
-    background-color: transparent !important;
+    background-color: rgba(20, 30, 45, 0.88) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -6284,9 +6284,9 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .form-control:focus {
-    background-color: transparent !important;
-    border: 1px solid rgba(13, 110, 253, 0.6) !important;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important;
+    background-color: rgba(25, 35, 50, 0.92) !important;
+    border: 1px solid rgba(96, 165, 250, 0.6) !important;
+    box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.15) !important;
 }
 
 /* 暗色主题下的下拉菜单透明度调整 */
@@ -6416,11 +6416,11 @@ body.custom-background-enabled .table-responsive {
 }
 
 body.custom-background-enabled .form-control {
-    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.15 + 0.8)) !important;
+    background: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.9)) !important;
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .form-control {
-    background: rgba(20, 30, 45, calc(var(--page-opacity) * 0.2 + 0.65)) !important;
+    background: rgba(20, 30, 45, calc(var(--page-opacity) * 0.15 + 0.8)) !important;
 }
 
 
@@ -6603,8 +6603,8 @@ p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
 
 [data-bs-theme="dark"] {
     --monitor-bg: #111827;
-    --monitor-surface: rgba(17, 24, 39, 0.6);
-    --monitor-surface-strong: rgba(26, 30, 45, 0.8);
+    --monitor-surface: rgba(17, 24, 39, 0.88);
+    --monitor-surface-strong: rgba(26, 30, 45, 0.92);
     --monitor-border: rgba(255, 255, 255, 0.1);
     --monitor-text: #f8fafc;
     --monitor-muted: #cbd5e1;
@@ -6894,8 +6894,8 @@ body {
 
 [data-bs-theme="dark"] {
     --monitor-bg: #0f172a;
-    --monitor-surface: rgba(15, 23, 42, 0.6);
-    --monitor-surface-strong: rgba(20, 33, 58, 0.8);
+    --monitor-surface: rgba(15, 23, 42, 0.88);
+    --monitor-surface-strong: rgba(20, 33, 58, 0.92);
     --monitor-border: rgba(255, 255, 255, 0.1);
     --monitor-text: #f8fafc;
     --monitor-muted: #cbd5e1;
@@ -7591,7 +7591,7 @@ body {
 .input-group .form-control {
     border-radius: 16px !important;
     border: 1px solid var(--apple-line) !important;
-    background: rgba(255, 255, 255, 0.62) !important;
+    background: rgba(255, 255, 255, 0.92) !important;
     color: var(--apple-text) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
@@ -7663,7 +7663,7 @@ body {
 .login-card .form-control {
     min-height: 52px;
     border-radius: 18px !important;
-    background: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
 }
 
 .login-card .form-control:focus {
