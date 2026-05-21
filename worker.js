@@ -5322,7 +5322,7 @@ hr.my-4 {
 }
 
 /* 导航栏主题跟随 - 精简版 */
-[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.88) !important; }
+[data-bs-theme="light"] .navbar { background-color: rgba(255, 255, 255, 0.75) !important; }
 [data-bs-theme="dark"] .navbar { background-color: rgba(15, 20, 30, 0.75) !important; }
 
 /* 导航栏文字主题跟随 */
@@ -6065,7 +6065,7 @@ body.custom-background-enabled::before {
 
 /* 启用自定义背景时的页面元素透明度调整 */
 body.custom-background-enabled .navbar {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.85)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.72)) !important;
     backdrop-filter: saturate(120%) blur(8px);
     -webkit-backdrop-filter: saturate(120%) blur(8px);
 }
@@ -6087,24 +6087,26 @@ body.custom-background-enabled .modal-content {
 }
 
 body.custom-background-enabled .footer {
-    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.85)) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.1 + 0.72)) !important;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(5px);
 }
 
 /* 表格透明度调整 - 避免与卡片背景叠加 */
 body.custom-background-enabled .table {
-    background-color: transparent !important;
+    background-color: rgba(255, 255, 255, 0.72) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
 
 body.custom-background-enabled .table th {
-    background-color: transparent !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    background-color: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
 }
 
 body.custom-background-enabled .table td {
-    background-color: transparent !important;
+    background-color: rgba(255, 255, 255, 0.68) !important;
 }
 
 /* 输入框 - 保证可读性 */
@@ -6261,17 +6263,19 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的表格透明度调整 - 避免与卡片背景叠加 */
 [data-bs-theme="dark"] body.custom-background-enabled .table {
-    background-color: transparent !important;
+    background-color: rgba(15, 20, 30, 0.78) !important;
+    backdrop-filter: saturate(120%) blur(12px);
+    -webkit-backdrop-filter: saturate(120%) blur(12px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .table th {
-    background-color: transparent !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    background-color: rgba(15, 20, 30, 0.85) !important;
+    backdrop-filter: saturate(120%) blur(10px);
+    -webkit-backdrop-filter: saturate(120%) blur(10px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .table td {
-    background-color: transparent !important;
+    background-color: rgba(15, 20, 30, 0.72) !important;
 }
 
 /* 暗色主题下的输入框 - 保证可读性 */
@@ -7547,7 +7551,7 @@ body {
 }
 
 [data-bs-theme="dark"] .table-responsive {
-    background: rgba(10, 10, 11, 0.94) !important;
+    background: rgba(15, 20, 30, 0.82) !important;
     border-color: rgba(255, 255, 255, 0.08) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), var(--apple-shadow-soft);
 }
