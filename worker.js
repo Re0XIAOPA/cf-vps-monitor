@@ -3873,8 +3873,8 @@ function getIndexHtml() {
 
         /* Dark Theme Adjustments */
         [data-bs-theme="dark"] body {
-            background-color: transparent !important; /* Bootstrap dark bg */
-            color: #ffffff !important; /* White text for dark mode */
+            background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
+            color: #e2e8f0 !important;
         }
         [data-bs-theme="dark"] h1, [data-bs-theme="dark"] h2, [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4, [data-bs-theme="dark"] h5, [data-bs-theme="dark"] h6 {
             color: #ffffff; /* White color for headings */
@@ -4248,8 +4248,8 @@ function getLoginHtml() {
 
         /* Dark Theme Adjustments */
         [data-bs-theme="dark"] body {
-            background-color: #212529; /* Bootstrap dark bg */
-            color: #ffffff; /* White text for dark mode */
+            background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
+            color: #e2e8f0 !important;
         }
         [data-bs-theme="dark"] h1, [data-bs-theme="dark"] h2, [data-bs-theme="dark"] h3, [data-bs-theme="dark"] h4, [data-bs-theme="dark"] h5, [data-bs-theme="dark"] h6 {
             color: #ffffff; /* White color for headings */
@@ -5047,38 +5047,27 @@ body {
     -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-/* 增强 Modal 遮罩层 */
-.modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+/* Modal 样式 - 简洁版 */
+.modal-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 16px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Modal 标题样式增强 */
 .modal-header {
-    background: linear-gradient(to bottom, rgba(248, 250, 252, 0.8), transparent);
-    border-bottom: 2px solid var(--apple-line, rgba(129, 151, 183, 0.15)) !important;
-    border-radius: 19px 19px 0 0 !important;
-    padding: 1.25rem 1.5rem !important;
+    border-bottom: 1px solid rgba(129, 151, 183, 0.2) !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding: 1rem 1.25rem !important;
 }
 
 .modal-title {
-    font-size: 1.15rem !important;
-    font-weight: 700 !important;
-    color: var(--apple-text) !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
 }
 
-/* Modal 内容区域 */
-.modal-body {
-    padding: 1.5rem !important;
-}
-
-/* Modal 底部按钮区 */
 .modal-footer {
-    border-top: 1px solid var(--apple-line, rgba(129, 151, 183, 0.15)) !important;
-    padding: 1rem 1.5rem !important;
-    background: rgba(248, 250, 252, 0.3);
-    border-radius: 0 0 19px 19px !important;
+    border-top: 1px solid rgba(129, 151, 183, 0.2) !important;
+    padding: 0.875rem 1.25rem !important;
 }
 
 
@@ -5334,11 +5323,11 @@ hr.my-4 {
 
 /* 导航栏主题跟随 - 精简版 */
 [data-bs-theme="light"] .navbar { background-color: #f8f9fa !important; }
-[data-bs-theme="dark"] .navbar { background-color: #343a40 !important; }
+[data-bs-theme="dark"] .navbar { background-color: rgba(26, 31, 46, 0.95) !important; }
 
 /* 导航栏文字主题跟随 */
 [data-bs-theme="light"] .navbar .nav-link, [data-bs-theme="light"] .navbar a { color: #212529 !important; }
-[data-bs-theme="dark"] .navbar .nav-link, [data-bs-theme="dark"] .navbar a { color: #ffffff !important; }
+[data-bs-theme="dark"] .navbar .nav-link, [data-bs-theme="dark"] .navbar a { color: #e2e8f0 !important; }
 
 /* 导航栏按钮主题跟随 */
 [data-bs-theme="light"] .navbar .btn-outline-light { border-color: #212529 !important; color: #212529 !important; }
@@ -5756,37 +5745,27 @@ body {
         }
 
         .modal-content {
-            background-color: rgba(35, 42, 55, 0.95) !important;
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
-            border-radius: 20px !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            background-color: rgba(30, 35, 45, 0.95) !important;
+            color: #e2e8f0;
+            border-radius: 16px !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
         }
 
         .modal-header {
-            background: linear-gradient(to bottom, rgba(45, 55, 72, 0.8), transparent);
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 19px 19px 0 0 !important;
-            padding: 1.25rem 1.5rem !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px 16px 0 0 !important;
+            padding: 1rem 1.25rem !important;
         }
 
         .modal-title {
-            font-size: 1.15rem !important;
-            font-weight: 700 !important;
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
             color: #f1f5f9 !important;
-        }
-
-        .modal-body {
-            padding: 1.5rem !important;
         }
 
         .modal-footer {
             border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-            padding: 1rem 1.5rem !important;
-            background: rgba(30, 35, 45, 0.4);
-            border-radius: 0 0 19px 19px !important;
+            padding: 0.875rem 1.25rem !important;
         }
 
         .form-control {
@@ -6086,16 +6065,16 @@ body.custom-background-enabled::before {
 
 /* 启用自定义背景时的页面元素透明度调整 */
 body.custom-background-enabled .navbar {
-    background-color: rgba(248, 249, 250, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background-color: rgba(248, 249, 250, calc(var(--page-opacity) * 0.7 + 0.25)) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
 
 body.custom-background-enabled .card {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(28px);
-    -webkit-backdrop-filter: saturate(180%) blur(28px);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.7 + 0.25)) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 body.custom-background-enabled .card-header {
@@ -6235,9 +6214,9 @@ body.custom-background-enabled .dropdown-menu {
 /* 移动端卡片透明度调整 */
 body.custom-background-enabled .mobile-server-card,
 body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(28px);
-    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.7 + 0.25)) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
 
 body.custom-background-enabled .mobile-card-header {
@@ -6255,16 +6234,16 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的自定义背景样式 */
 [data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background-color: rgba(30, 35, 45, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.6 + 0.35)) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card {
-    background-color: rgba(30, 35, 45, var(--page-opacity)) !important;
-    backdrop-filter: saturate(180%) blur(28px);
-    -webkit-backdrop-filter: saturate(180%) blur(28px);
-    border-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.6 + 0.35)) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .card-header {
@@ -6394,8 +6373,9 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-server-card,
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(33, 37, 41, var(--page-opacity)) !important;
-    border-color: rgba(73, 80, 87, var(--page-opacity));
+    background-color: rgba(20, 25, 35, calc(var(--page-opacity) * 0.6 + 0.35)) !important;
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .mobile-card-header {
@@ -7260,7 +7240,7 @@ body {
 }
 
 [data-bs-theme="dark"] body {
-    background: linear-gradient(135deg, #101010ff 0%, #101010ff 44%, #101010ff 100%) !important;
+    background: linear-gradient(135deg, #1a1f2e 0%, #161b29 44%, #1e2433 100%) !important;
 }
 
 body {
@@ -7281,9 +7261,6 @@ body {
 
 [data-bs-theme="light"] .navbar {
     background: rgba(255, 255, 255, 0.56) !important;
-}
-
-[data-bs-theme="dark"] .navbar {
 }
 
 .navbar .container {
