@@ -3548,7 +3548,7 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        personalizations: [{ to: receivers.map(email => ({ email })) }],
+        personalizations: [{ to: receivers.map(function(e) { return { email: e }; }) }],
         from: { email: senderEmail },
         subject: subject,
         content: [{ type: 'text/html', value: htmlBody }]
@@ -3557,17 +3557,17 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
 
     if (response.ok) return { success: true };
 
-    const errorText = await response.text();
-    let errorMsg = '邮件发送失败';
+    var errorText = await response.text();
+    var errorMsg = '邮件发送失败';
     try {
-      const errJson = JSON.parse(errorText);
-      errorMsg = errJson.errors?.[0] || errJson.message || errJson.error || errorText;
-    } catch(e) {
+      var errJson = JSON.parse(errorText);
+      errorMsg = (errJson.errors && errJson.errors[0]) || errJson.message || errJson.error || errorText;
+    } catch(_) {
       errorMsg = errorText.substring(0, 200);
     }
 
     if (response.status === 401 || response.status === 403) {
-      errorMsg = '发送被拒(401): 发件域名未授权。请确认发件人邮箱域名已添加到 Cloudflare DNS';
+      errorMsg = '发送被拒(401): 发件域名 ' + (senderEmail.split('@')[1] || '') + ' 未通过验证。发件人邮箱必须使用你 Cloudflare 上托管域名的邮箱地址（如 noreply@你的域名.com）';
     }
 
     return { success: false, error: errorMsg };
