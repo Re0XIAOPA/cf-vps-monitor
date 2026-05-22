@@ -178,7 +178,7 @@ class ConfigCache {
     if (cached) return cached;
 
     const config = await db.prepare(
-      'SELECT sender_email, receiver_email, enable_notifications FROM email_config WHERE id = 1'
+      'SELECT smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications FROM email_config WHERE id = 1'
     ).first();
 
     if (config) {
@@ -2806,7 +2806,7 @@ async function handleApiRequest(request, env, ctx) {
       const settings = await configCache.getEmailConfig(env.DB);
 
       return new Response(JSON.stringify(
-        settings || { sender_email: null, receiver_email: null, enable_notifications: 0 }
+        settings || { smtp_host: null, smtp_port: 465, sender_email: null, sender_password: null, receiver_email: null, enable_notifications: 0 }
       ), {
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
@@ -2815,7 +2815,10 @@ async function handleApiRequest(request, env, ctx) {
         try {
           await env.DB.exec(D1_SCHEMAS.email_config);
           return new Response(JSON.stringify({
+            smtp_host: null,
+            smtp_port: 465,
             sender_email: null,
+            sender_password: null,
             receiver_email: null,
             enable_notifications: 0
           }), {
@@ -2848,13 +2851,13 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     try {
-      const { sender_email, receiver_email, enable_notifications } = await request.json();
+      const { smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications } = await request.json();
       const updatedAt = Math.floor(Date.now() / 1000);
       const enableNotifValue = (enable_notifications === true || enable_notifications === 1) ? 1 : 0;
 
       await env.DB.prepare(`
-        UPDATE email_config SET sender_email = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
-      `).bind(sender_email || null, receiver_email || null, enableNotifValue, updatedAt).run();
+        UPDATE email_config SET smtp_host = ?, smtp_port = ?, sender_email = ?, sender_password = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
+      `).bind(smtp_host || null, smtp_port || 465, sender_email || null, sender_password || null, receiver_email || null, enableNotifValue, updatedAt).run();
 
       configCache.clearKey('email_config');
 
@@ -2887,10 +2890,10 @@ async function handleApiRequest(request, env, ctx) {
 
     try {
       const emailConfig = await configCache.getEmailConfig(env.DB);
-      if (!emailConfig?.sender_email || !emailConfig?.receiver_email) {
+      if (!emailConfig?.smtp_host || !emailConfig?.sender_email || !emailConfig?.sender_password || !emailConfig?.receiver_email) {
         return new Response(JSON.stringify({
           error: 'Bad request',
-          message: '请先配置发件人和收件人邮箱'
+          message: '请先配置完整的SMTP信息：SMTP服务器、发件人邮箱、SMTP密码和收件人邮箱'
         }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -2898,7 +2901,10 @@ async function handleApiRequest(request, env, ctx) {
       }
 
       const testResult = await sendEmailNotification(
+        emailConfig.smtp_host,
+        emailConfig.smtp_port,
         emailConfig.sender_email,
+        emailConfig.sender_password,
         emailConfig.receiver_email,
         'VPS监控面板 - 邮件通知测试',
         '<h2>✅ 邮件通知测试成功</h2><p>您的邮件通知设置已正确配置，可以正常发送邮件。</p><p>此消息由 VPS监控面板自动发送。</p>'
@@ -3533,22 +3539,38 @@ async function sendTelegramNotificationOptimized(db, message, priority = 'normal
 
 // ==================== 邮件通知系统 ====================
 
-async function sendEmailNotification(senderEmail, receiverEmail, subject, htmlBody) {
+async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPassword, receiverEmail, subject, htmlBody) {
   try {
     const receivers = receiverEmail.split(',').map(e => e.trim()).filter(e => e);
+    
+    if (!smtpHost || !senderEmail || !senderPassword || receivers.length === 0) {
+      return { success: false, error: '邮件配置不完整' };
+    }
+
+    const port = smtpPort || 465;
+    
+    const emailPayload = {
+      personalizations: [{ to: receivers.map(function(e) { return { email: e }; }) }],
+      from: { email: senderEmail },
+      subject: subject,
+      content: [{ type: 'text/html', value: htmlBody }]
+    };
 
     let response = await fetch('https://api.mailchannels.net/tx/v3/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        personalizations: [{ to: receivers.map(function(e) { return { email: e }; }) }],
-        from: { email: senderEmail },
-        subject: subject,
-        content: [{ type: 'text/html', value: htmlBody }]
-      })
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-SMTP-Host': smtpHost,
+        'X-SMTP-Port': port.toString(),
+        'X-SMTP-User': senderEmail,
+        'X-SMTP-Pass': senderPassword
+      },
+      body: JSON.stringify(emailPayload)
     });
 
-    if (response.ok) return { success: true };
+    if (response.ok) {
+      return { success: true };
+    }
 
     var errorText = await response.text();
     var errorMsg = '邮件发送失败';
@@ -3560,7 +3582,7 @@ async function sendEmailNotification(senderEmail, receiverEmail, subject, htmlBo
     }
 
     if (response.status === 401 || response.status === 403) {
-      errorMsg = '发送被拒(401): 发件域名 ' + (senderEmail.split('@')[1] || '') + ' 未授权';
+      errorMsg = 'SMTP认证失败，请检查SMTP服务器地址、端口、用户名和密码是否正确';
     }
 
     return { success: false, error: errorMsg };
@@ -3574,12 +3596,15 @@ async function sendEmailNotificationOptimized(db, subject, htmlBody, priority = 
   try {
     const emailConfig = await configCache.getEmailConfig(db);
 
-    if (!emailConfig?.enable_notifications || !emailConfig?.sender_email || !emailConfig?.receiver_email) {
+    if (!emailConfig?.enable_notifications || !emailConfig?.smtp_host || !emailConfig?.sender_email || !emailConfig?.sender_password || !emailConfig?.receiver_email) {
       return;
     }
 
     await sendEmailNotification(
+      emailConfig.smtp_host,
+      emailConfig.smtp_port,
       emailConfig.sender_email,
+      emailConfig.sender_password,
       emailConfig.receiver_email,
       subject,
       htmlBody
@@ -5010,14 +5035,29 @@ function getAdminHtml() {
 
                     <form id="emailSettingsForm">
                         <div class="mb-3">
+                            <label for="smtpHost" class="form-label">SMTP服务器地址</label>
+                            <input type="text" class="form-control" id="smtpHost" placeholder="smtp.163.com">
+                            <div class="form-text">例如: smtp.163.com, smtp.qq.com, smtp.gmail.com</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="smtpPort" class="form-label">SMTP端口</label>
+                            <input type="number" class="form-control" id="smtpPort" placeholder="465" value="465">
+                            <div class="form-text">常用端口: 465(SSL), 587(TLS), 25(非加密)</div>
+                        </div>
+                        <div class="mb-3">
                             <label for="emailSender" class="form-label">发件人邮箱</label>
-                            <input type="email" class="form-control" id="emailSender" placeholder="noreply@你的域名.com">
-                            <div class="form-text">必须使用你 Cloudflare 上托管域名的邮箱地址</div>
+                            <input type="email" class="form-control" id="emailSender" placeholder="sender@example.com">
+                            <div class="form-text">SMTP账号对应的邮箱地址</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="smtpPassword" class="form-label">SMTP密码/授权码</label>
+                            <input type="password" class="form-control" id="smtpPassword" placeholder="输入SMTP密码或授权码">
+                            <div class="form-text">部分邮箱(如QQ、163)需使用授权码</div>
                         </div>
                         <div class="mb-3">
                             <label for="emailReceiver" class="form-label">收件人邮箱</label>
                             <input type="email" class="form-control" id="emailReceiver" placeholder="例如: receiver@qq.com">
-                            <div class="form-text">多个收件人用英文逗号分隔，可以是任意邮箱</div>
+                            <div class="form-text">多个收件人用英文逗号分隔</div>
                         </div>
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="enableEmailNotifications">
@@ -11388,8 +11428,9 @@ async function saveSite() {
     const domainPattern = /^[\w.-]+\.[a-zA-Z]{2,}$/;
     const isTcpPort = tcpPortPattern.test(siteUrl);
     const isDomain = domainPattern.test(siteUrl) && !siteUrl.includes('://') && !siteUrl.includes(':');
+    const isUrl = siteUrl.startsWith('http://') || siteUrl.startsWith('https://');
 
-    if (!isTcpPort && !isDomain && !siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+    if (!isTcpPort && !isDomain && !isUrl) {
          showToast('warning', '请输入有效的地址：URL以http://或https://开头，IP:端口，域名:端口 或 纯域名');
          return;
     }
@@ -11689,7 +11730,10 @@ async function loadEmailSettings() {
     try {
         const settings = await apiRequest('/api/admin/email-settings');
         if (settings) {
+            document.getElementById('smtpHost').value = settings.smtp_host || '';
+            document.getElementById('smtpPort').value = settings.smtp_port || '465';
             document.getElementById('emailSender').value = settings.sender_email || '';
+            document.getElementById('smtpPassword').value = settings.sender_password || '';
             document.getElementById('emailReceiver').value = settings.receiver_email || '';
             document.getElementById('enableEmailNotifications').checked = !!settings.enable_notifications;
         }
@@ -11699,21 +11743,27 @@ async function loadEmailSettings() {
 }
 
 async function saveEmailSettings() {
+    const smtpHost = document.getElementById('smtpHost').value.trim();
+    const smtpPort = document.getElementById('smtpPort').value.trim();
     const senderEmail = document.getElementById('emailSender').value.trim();
+    const smtpPassword = document.getElementById('smtpPassword').value.trim();
     const receiverEmail = document.getElementById('emailReceiver').value.trim();
     let enableNotifications = document.getElementById('enableEmailNotifications').checked;
 
-    if (!senderEmail || !receiverEmail) {
+    if (!smtpHost || !senderEmail || !receiverEmail) {
         enableNotifications = false;
         document.getElementById('enableEmailNotifications').checked = false;
-        showToast('warning', '发件人和收件人不能为空才能启用通知');
+        showToast('warning', 'SMTP服务器、发件人和收件人不能为空才能启用通知');
     }
 
     try {
         await apiRequest('/api/admin/email-settings', {
             method: 'POST',
             body: JSON.stringify({
+                smtp_host: smtpHost,
+                smtp_port: smtpPort ? parseInt(smtpPort) : 465,
                 sender_email: senderEmail,
+                sender_password: smtpPassword,
                 receiver_email: receiverEmail,
                 enable_notifications: enableNotifications
             })
