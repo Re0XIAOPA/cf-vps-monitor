@@ -3221,6 +3221,17 @@ function isTcpPortUrl(url) {
   return /^[\w.-]+:\d{1,5}$/.test(url);
 }
 
+function isPureDomainUrl(url) {
+  return /^[\w.-]+\.[a-zA-Z]{2,}$/.test(url) && !url.includes('://') && !url.includes(':');
+}
+
+function getSiteUrlType(url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return 'http';
+  if (isTcpPortUrl(url)) return 'tcp';
+  if (isPureDomainUrl(url)) return 'domain';
+  return 'unknown';
+}
+
 async function checkTcpPort(url) {
   const startTime = Date.now();
   try {
@@ -3265,7 +3276,7 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
   const NOTIFICATION_INTERVAL_SECONDS = 1 * 60 * 60; // 1 hour
 
   try {
-    if (isTcpPortUrl(url)) {
+    if (isTcpPortUrl(url) || isPureDomainUrl(url)) {
       const result = await checkTcpPort(url);
       newStatus = result.status;
       newStatusCode = result.statusCode;
@@ -3292,8 +3303,8 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
 
   const checkTime = Math.floor(Date.now() / 1000);
   const siteDisplayName = name || url;
-  const isTcp = isTcpPortUrl(url);
-  const targetLabel = isTcp ? '服务' : '网站';
+  const isTcpOrDomain = isTcpPortUrl(url) || isPureDomainUrl(url);
+  const targetLabel = isTcpOrDomain ? '服务' : '网站';
   let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt;
 
   if (['DOWN', 'TIMEOUT', 'ERROR'].includes(newStatus)) {
@@ -3382,7 +3393,7 @@ async function checkWebsiteStatusOptimized(site, db, ctx) {
   const NOTIFICATION_INTERVAL_SECONDS = 1 * 60 * 60; // 1小时
 
   try {
-    if (isTcpPortUrl(url)) {
+    if (isTcpPortUrl(url) || isPureDomainUrl(url)) {
       const result = await checkTcpPort(url);
       newStatus = result.status;
       newStatusCode = result.statusCode;
@@ -3414,8 +3425,8 @@ async function checkWebsiteStatusOptimized(site, db, ctx) {
 
   const checkTime = Math.floor(Date.now() / 1000);
   const siteDisplayName = name || url;
-  const isTcp = isTcpPortUrl(url);
-  const targetLabel = isTcp ? '服务' : '网站';
+  const isTcpOrDomain = isTcpPortUrl(url) || isPureDomainUrl(url);
+  const targetLabel = isTcpOrDomain ? '服务' : '网站';
   let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt;
 
   if (['DOWN', 'TIMEOUT', 'ERROR'].includes(newStatus)) {
@@ -5193,7 +5204,8 @@ function getAdminHtml() {
                         </div>
                         <div class="mb-3">
                             <label for="siteUrl" class="form-label">监控地址</label>
-                            <input type="text" class="form-control" id="siteUrl" placeholder="https://example.com 或 192.168.1.1:25565" required>
+                            <input type="text" class="form-control" id="siteUrl" placeholder="https://example.com 或 192.168.1.1:25565 或 mc.server.com" required>
+                            <div class="form-text">支持: URL(http/https) / IP:端口 / 域名:端口 / 纯域名</div>
                         </div>
                         <!-- Removed siteEnableFrequentNotifications checkbox -->
                     </form>
@@ -11445,10 +11457,12 @@ async function saveSite() {
     }
 
     const tcpPortPattern = /^[\w.-]+:\d{1,5}$/;
+    const domainPattern = /^[\w.-]+\.[a-zA-Z]{2,}$/;
     const isTcpPort = tcpPortPattern.test(siteUrl);
+    const isDomain = domainPattern.test(siteUrl) && !siteUrl.includes('://') && !siteUrl.includes(':');
 
-    if (!isTcpPort && !siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
-         showToast('warning', '请输入有效的地址：URL需以 http:// 或 https:// 开头，或使用 格式:域名/IP:端口');
+    if (!isTcpPort && !isDomain && !siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+         showToast('warning', '请输入有效的地址：URL(http/https)、IP:端口、域名:端口 或 纯域名');
          return;
     }
 
