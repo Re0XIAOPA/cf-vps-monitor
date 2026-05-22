@@ -178,7 +178,7 @@ class ConfigCache {
     if (cached) return cached;
 
     const config = await db.prepare(
-      'SELECT smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications FROM email_config WHERE id = 1'
+      'SELECT sender_email, receiver_email, enable_notifications FROM email_config WHERE id = 1'
     ).first();
 
     if (config) {
@@ -2806,7 +2806,7 @@ async function handleApiRequest(request, env, ctx) {
       const settings = await configCache.getEmailConfig(env.DB);
 
       return new Response(JSON.stringify(
-        settings || { smtp_host: null, smtp_port: 465, sender_email: null, receiver_email: null, enable_notifications: 0 }
+        settings || { sender_email: null, receiver_email: null, enable_notifications: 0 }
       ), {
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
@@ -2815,10 +2815,7 @@ async function handleApiRequest(request, env, ctx) {
         try {
           await env.DB.exec(D1_SCHEMAS.email_config);
           return new Response(JSON.stringify({
-            smtp_host: null,
-            smtp_port: 465,
             sender_email: null,
-            sender_password: null,
             receiver_email: null,
             enable_notifications: 0
           }), {
@@ -2851,14 +2848,13 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     try {
-      const { smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications } = await request.json();
+      const { sender_email, receiver_email, enable_notifications } = await request.json();
       const updatedAt = Math.floor(Date.now() / 1000);
       const enableNotifValue = (enable_notifications === true || enable_notifications === 1) ? 1 : 0;
-      const portValue = parseInt(smtp_port, 10) || 465;
 
       await env.DB.prepare(`
-        UPDATE email_config SET smtp_host = ?, smtp_port = ?, sender_email = ?, sender_password = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
-      `).bind(smtp_host || null, portValue, sender_email || null, sender_password || null, receiver_email || null, enableNotifValue, updatedAt).run();
+        UPDATE email_config SET sender_email = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
+      `).bind(sender_email || null, receiver_email || null, enableNotifValue, updatedAt).run();
 
       configCache.clearKey('email_config');
 
@@ -2891,10 +2887,10 @@ async function handleApiRequest(request, env, ctx) {
 
     try {
       const emailConfig = await configCache.getEmailConfig(env.DB);
-      if (!emailConfig?.smtp_host || !emailConfig?.sender_email || !emailConfig?.receiver_email) {
+      if (!emailConfig?.sender_email || !emailConfig?.receiver_email) {
         return new Response(JSON.stringify({
           error: 'Bad request',
-          message: '请先完整配置邮件设置（SMTP服务器、发件人、收件人）'
+          message: '请先配置发件人和收件人邮箱'
         }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -2902,10 +2898,7 @@ async function handleApiRequest(request, env, ctx) {
       }
 
       const testResult = await sendEmailNotification(
-        emailConfig.smtp_host,
-        emailConfig.smtp_port || 465,
         emailConfig.sender_email,
-        emailConfig.sender_password,
         emailConfig.receiver_email,
         'VPS监控面板 - 邮件通知测试',
         '<h2>✅ 邮件通知测试成功</h2><p>您的邮件通知设置已正确配置，可以正常发送邮件。</p><p>此消息由 VPS监控面板自动发送。</p>'
@@ -3540,15 +3533,9 @@ async function sendTelegramNotificationOptimized(db, message, priority = 'normal
 
 // ==================== 邮件通知系统 ====================
 
-async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPassword, receiverEmail, subject, htmlBody) {
+async function sendEmailNotification(senderEmail, receiverEmail, subject, htmlBody) {
   try {
     const receivers = receiverEmail.split(',').map(e => e.trim()).filter(e => e);
-
-    if (!senderPassword || !senderPassword.trim()) {
-      return { success: false, error: '未配置授权码或密码' };
-    }
-
-    const encodedSubject = btoa(unescape(encodeURIComponent(subject)));
 
     let response = await fetch('https://api.mailchannels.net/tx/v3/send', {
       method: 'POST',
@@ -3571,6 +3558,11 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
     } catch(e) {
       errorMsg = errorText.substring(0, 200);
     }
+
+    if (response.status === 401 || response.status === 403) {
+      errorMsg = '发件域名未授权。请在 Cloudflare DNS 添加 TXT 记录: _mailchannels → v=mc1 cfid=' + (senderEmail.split('@')[1] || '你的域名');
+    }
+
     return { success: false, error: errorMsg };
 
   } catch (error) {
@@ -3582,15 +3574,12 @@ async function sendEmailNotificationOptimized(db, subject, htmlBody, priority = 
   try {
     const emailConfig = await configCache.getEmailConfig(db);
 
-    if (!emailConfig?.enable_notifications || !emailConfig?.smtp_host || !emailConfig?.sender_email || !emailConfig?.receiver_email) {
+    if (!emailConfig?.enable_notifications || !emailConfig?.sender_email || !emailConfig?.receiver_email) {
       return;
     }
 
     await sendEmailNotification(
-      emailConfig.smtp_host,
-      emailConfig.smtp_port || 465,
       emailConfig.sender_email,
-      emailConfig.sender_password,
       emailConfig.receiver_email,
       subject,
       htmlBody
@@ -5018,33 +5007,22 @@ function getAdminHtml() {
                         <i class="bi bi-envelope me-2"></i>邮件通知设置
                     </h5>
 
+                    <div class="alert alert-info mb-3 py-2" role="alert">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Cloudflare Workers 无法直连 SMTP 服务器，而是通过 Cloudflare 内置邮件通道发送。
+                        发件人需使用你 Cloudflare 上托管的域名邮箱（如 noreply@你的域名.com）。
+                    </div>
+
                     <form id="emailSettingsForm">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="emailSmtpHost" class="form-label">SMTP 服务器地址</label>
-                                <input type="text" class="form-control" id="emailSmtpHost" placeholder="例如: smtp.qq.com">
-                                <div class="form-text">QQ邮箱: smtp.qq.com / 163邮箱: smtp.163.com / Gmail: smtp.gmail.com / Outlook: smtp-mail.outlook.com</div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="emailSmtpPort" class="form-label">端口</label>
-                                <input type="number" class="form-control" id="emailSmtpPort" placeholder="465" value="465" min="1" max="65535">
-                                <div class="form-text">SSL: 465 / TLS: 587</div>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="emailSender" class="form-label">发件人邮箱</label>
-                                <input type="email" class="form-control" id="emailSender" placeholder="例如: your@qq.com">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="emailPassword" class="form-label">授权码 / 密码</label>
-                                <input type="password" class="form-control" id="emailPassword" placeholder="QQ/163填授权码, Gmail填应用密码">
-                            </div>
+                        <div class="mb-3">
+                            <label for="emailSender" class="form-label">发件人邮箱</label>
+                            <input type="email" class="form-control" id="emailSender" placeholder="例如: noreply@你的域名.com">
+                            <div class="form-text">必须使用你 Cloudflare 上托管域名的邮箱地址</div>
                         </div>
                         <div class="mb-3">
                             <label for="emailReceiver" class="form-label">收件人邮箱</label>
                             <input type="email" class="form-control" id="emailReceiver" placeholder="例如: receiver@xxx.com">
-                            <div class="form-text">多个收件人用英文逗号分隔</div>
+                            <div class="form-text">多个收件人用英文逗号分隔。可以是任意邮箱(QQ/163/Gmail等)</div>
                         </div>
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="enableEmailNotifications">
@@ -5052,6 +5030,16 @@ function getAdminHtml() {
                                 启用邮件通知
                             </label>
                         </div>
+
+                        <div class="card bg-light mb-3" id="dnsInstructions" style="display:none">
+                            <div class="card-body py-2">
+                                <strong><i class="bi bi-gear me-1"></i>DNS 设置（只需设置一次）</strong>
+                                <p class="mb-1 mt-1 small">在 Cloudflare DNS 中添加以下 TXT 记录：</p>
+                                <code class="small d-block mb-1">类型: TXT | 名称: _mailchannels | 内容: v=mc1 cfid=<span id="dnsDomainPlaceholder">你的域名</span></code>
+                                <a href="https://dash.cloudflare.com/" target="_blank" class="small">前往 Cloudflare DNS 设置 →</a>
+                            </div>
+                        </div>
+
                         <div id="emailSettingsAlert" class="alert d-none" role="alert"></div>
                         <button type="button" id="saveEmailSettingsBtn" class="btn btn-primary">保存设置</button>
                         <button type="button" id="testEmailBtn" class="btn btn-outline-secondary ms-2">发送测试邮件</button>
@@ -10257,6 +10245,10 @@ function initEventListeners() {
         testEmail();
     });
 
+    document.getElementById('emailSender').addEventListener('input', function() {
+        updateDnsInstructions();
+    });
+
     // 透明度滑块实时预览
     document.getElementById('pageOpacity').addEventListener('input', function() {
         updateOpacityPreview();
@@ -11389,12 +11381,26 @@ function editSite(siteId) {
 async function saveSite() {
     const siteId = document.getElementById('siteId').value;
     const siteName = document.getElementById('siteName').value.trim();
-    const siteUrl = document.getElementById('siteUrl').value.trim();
+    let siteUrl = document.getElementById('siteUrl').value.trim();
 
     if (!siteUrl) {
         showToast('warning', '请输入监控地址');
         return;
     }
+
+    if (/^https:\/(?!\/)/i.test(siteUrl)) {
+        siteUrl = siteUrl.replace(/^https:\//i, 'https://');
+    }
+    if (/^http:\/(?!\/)/i.test(siteUrl)) {
+        siteUrl = siteUrl.replace(/^http:\//i, 'http://');
+    }
+    if (/^https:(?!\/\/)/i.test(siteUrl)) {
+        siteUrl = siteUrl.replace(/^https:/i, 'https://');
+    }
+    if (/^http:(?!\/\/)/i.test(siteUrl)) {
+        siteUrl = siteUrl.replace(/^http:/i, 'http://');
+    }
+    document.getElementById('siteUrl').value = siteUrl;
 
     const tcpPortPattern = /^[\w.-]+:\d{1,5}$/;
     const domainPattern = /^[\w.-]+\.[a-zA-Z]{2,}$/;
@@ -11402,7 +11408,7 @@ async function saveSite() {
     const isDomain = domainPattern.test(siteUrl) && !siteUrl.includes('://') && !siteUrl.includes(':');
 
     if (!isTcpPort && !isDomain && !siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
-         showToast('warning', '请输入有效的地址：URL(http/https)、IP:端口、域名:端口 或 纯域名');
+         showToast('warning', '请输入有效的地址：URL以http://或https://开头，IP:端口，域名:端口 或 纯域名');
          return;
     }
 
@@ -11701,40 +11707,44 @@ async function loadEmailSettings() {
     try {
         const settings = await apiRequest('/api/admin/email-settings');
         if (settings) {
-            document.getElementById('emailSmtpHost').value = settings.smtp_host || '';
-            document.getElementById('emailSmtpPort').value = settings.smtp_port || 465;
             document.getElementById('emailSender').value = settings.sender_email || '';
-            document.getElementById('emailPassword').value = settings.sender_password || '';
             document.getElementById('emailReceiver').value = settings.receiver_email || '';
             document.getElementById('enableEmailNotifications').checked = !!settings.enable_notifications;
+            updateDnsInstructions();
         }
     } catch (error) {
                 showToast('danger', '加载邮件设置失败: ' + error.message);
     }
 }
 
+function updateDnsInstructions() {
+    const sender = document.getElementById('emailSender').value.trim();
+    const domainMatch = sender.match(/@(.+)$/);
+    const dnsBox = document.getElementById('dnsInstructions');
+    if (domainMatch && sender) {
+        dnsBox.style.display = 'block';
+        document.getElementById('dnsDomainPlaceholder').textContent = domainMatch[1];
+    } else {
+        dnsBox.style.display = 'none';
+    }
+}
+
 async function saveEmailSettings() {
-    const smtpHost = document.getElementById('emailSmtpHost').value.trim();
-    const smtpPort = parseInt(document.getElementById('emailSmtpPort').value, 10) || 465;
     const senderEmail = document.getElementById('emailSender').value.trim();
-    const senderPassword = document.getElementById('emailPassword').value;
     const receiverEmail = document.getElementById('emailReceiver').value.trim();
     let enableNotifications = document.getElementById('enableEmailNotifications').checked;
 
-    if (!smtpHost || !senderEmail || !receiverEmail) {
+    if (!senderEmail || !receiverEmail) {
         enableNotifications = false;
         document.getElementById('enableEmailNotifications').checked = false;
-        showToast('warning', 'SMTP服务器、发件人和收件人不能为空才能启用通知');
+        showToast('warning', '发件人和收件人不能为空才能启用通知');
     }
 
     try {
         await apiRequest('/api/admin/email-settings', {
             method: 'POST',
             body: JSON.stringify({
-                smtp_host: smtpHost,
-                smtp_port: smtpPort,
                 sender_email: senderEmail,
-                sender_password: senderPassword,
                 receiver_email: receiverEmail,
                 enable_notifications: enableNotifications
             })
