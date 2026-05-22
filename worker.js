@@ -3567,7 +3567,7 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
     }
 
     if (response.status === 401 || response.status === 403) {
-      errorMsg = '发件域名 ' + (senderEmail.split('@')[1] || '') + ' 未通过 MailChannels 验证。请在 Cloudflare DNS 添加 TXT 记录: 名称 _mailchannels 内容 v=mc1 cfid=' + (senderEmail.split('@')[1] || '你的域名');
+      errorMsg = '发送被拒(401): 发件域名未授权。请确认发件人邮箱域名已添加到 Cloudflare DNS';
     }
 
     return { success: false, error: errorMsg };
@@ -5017,12 +5017,6 @@ function getAdminHtml() {
                         <i class="bi bi-envelope me-2"></i>邮件通知设置
                     </h5>
 
-                    <div class="alert alert-info mb-3 py-2" role="alert">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Cloudflare Workers 通过内置邮件通道发送，仅需配置收发邮箱。
-                        发件人需使用你 Cloudflare 上托管的域名邮箱。
-                    </div>
-
                     <form id="emailSettingsForm">
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -5056,15 +5050,6 @@ function getAdminHtml() {
                             <label class="form-check-label" for="enableEmailNotifications">
                                 启用邮件通知
                             </label>
-                        </div>
-
-                        <div class="card bg-light mb-3" id="dnsInstructions" style="display:none">
-                            <div class="card-body py-2">
-                                <strong><i class="bi bi-gear me-1"></i>DNS 验证设置（只需一次）</strong>
-                                <p class="mb-1 mt-1 small">在 Cloudflare DNS 中添加 TXT 记录以验证发件域名：</p>
-                                <code class="small d-block mb-1">类型: TXT | 名称: _mailchannels | 内容: v=mc1 cfid=<span id="dnsDomainPlaceholder">你的域名</span></code>
-                                <a href="https://dash.cloudflare.com/" target="_blank" class="small">前往 Cloudflare DNS →</a>
-                            </div>
                         </div>
 
                         <div id="emailSettingsAlert" class="alert d-none" role="alert"></div>
@@ -10272,13 +10257,6 @@ function initEventListeners() {
         testEmail();
     });
 
-    document.getElementById('emailSender').addEventListener('input', function() {
-        updateDnsInstructions();
-    });
-    document.getElementById('emailSmtpHost').addEventListener('input', function() {
-        updateDnsInstructions();
-    });
-
     // 透明度滑块实时预览
     document.getElementById('pageOpacity').addEventListener('input', function() {
         updateOpacityPreview();
@@ -11418,17 +11396,17 @@ async function saveSite() {
         return;
     }
 
-    if (/^https:\/(?!\/)/i.test(siteUrl)) {
-        siteUrl = siteUrl.replace(/^https:\//i, 'https://');
+    if (siteUrl.startsWith('https:/') && !siteUrl.startsWith('https://')) {
+        siteUrl = siteUrl.replace('https:/', 'https://');
     }
-    if (/^http:\/(?!\/)/i.test(siteUrl)) {
-        siteUrl = siteUrl.replace(/^http:\//i, 'http://');
+    if (siteUrl.startsWith('http:/') && !siteUrl.startsWith('http://')) {
+        siteUrl = siteUrl.replace('http:/', 'http://');
     }
-    if (/^https:(?!\/\/)/i.test(siteUrl)) {
-        siteUrl = siteUrl.replace(/^https:/i, 'https://');
+    if (siteUrl.startsWith('https:') && !siteUrl.startsWith('https://')) {
+        siteUrl = 'https://' + siteUrl.substring(6);
     }
-    if (/^http:(?!\/\/)/i.test(siteUrl)) {
-        siteUrl = siteUrl.replace(/^http:/i, 'http://');
+    if (siteUrl.startsWith('http:') && !siteUrl.startsWith('http://')) {
+        siteUrl = 'http://' + siteUrl.substring(5);
     }
     document.getElementById('siteUrl').value = siteUrl;
 
@@ -11743,23 +11721,9 @@ async function loadEmailSettings() {
             document.getElementById('emailPassword').value = settings.sender_password || '';
             document.getElementById('emailReceiver').value = settings.receiver_email || '';
             document.getElementById('enableEmailNotifications').checked = !!settings.enable_notifications;
-            updateDnsInstructions();
         }
     } catch (error) {
                 showToast('danger', '加载邮件设置失败: ' + error.message);
-    }
-}
-
-function updateDnsInstructions() {
-    const host = document.getElementById('emailSmtpHost').value.trim();
-    const sender = document.getElementById('emailSender').value.trim();
-    const domainMatch = sender.match(/@(.+)$/);
-    const dnsBox = document.getElementById('dnsInstructions');
-    if (domainMatch && sender && host) {
-        dnsBox.style.display = 'block';
-        document.getElementById('dnsDomainPlaceholder').textContent = domainMatch[1];
-    } else {
-        dnsBox.style.display = 'none';
     }
 }
 
@@ -11845,8 +11809,8 @@ async function saveDisplaySettings(partialSettings) {
     const siteToggle = document.getElementById('showSiteSectionToggle');
 
     const nextSettings = {
-        showServerSection: partialSettings.showServerSection ?? serverToggle.checked,
-        showSiteSection: partialSettings.showSiteSection ?? siteToggle.checked
+        showServerSection: partialSettings.showServerSection != null ? partialSettings.showServerSection : serverToggle.checked,
+        showSiteSection: partialSettings.showSiteSection != null ? partialSettings.showSiteSection : siteToggle.checked
     };
 
     if (serverToggle) serverToggle.disabled = true;
