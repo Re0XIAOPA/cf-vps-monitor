@@ -173,6 +173,21 @@ class ConfigCache {
     return config;
   }
 
+  async getEmailConfig(db) {
+    const cached = this.get('email_config');
+    if (cached) return cached;
+
+    const config = await db.prepare(
+      'SELECT smtp_host, smtp_port, sender_email, receiver_email, enable_notifications FROM email_config WHERE id = 1'
+    ).first();
+
+    if (config) {
+      this.set('email_config', config, this.CACHE_TTL.TELEGRAM);
+    }
+
+    return config;
+  }
+
   async getMonitoringSettings(db) {
     const cached = this.get('monitoring_settings');
     if (cached) return cached;
@@ -878,6 +893,19 @@ const D1_SCHEMAS = {
       updated_at INTEGER
     );
     INSERT OR IGNORE INTO telegram_config (id, bot_token, chat_id, enable_notifications, updated_at) VALUES (1, NULL, NULL, 0, NULL);`,
+
+  email_config: `
+    CREATE TABLE IF NOT EXISTS email_config (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      smtp_host TEXT,
+      smtp_port INTEGER DEFAULT 465,
+      sender_email TEXT,
+      sender_password TEXT,
+      receiver_email TEXT,
+      enable_notifications INTEGER DEFAULT 0,
+      updated_at INTEGER
+    );
+    INSERT OR IGNORE INTO email_config (id, smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications, updated_at) VALUES (1, NULL, 465, NULL, NULL, NULL, 0, NULL);`,
 
   app_config: `
     CREATE TABLE IF NOT EXISTS app_config (
@@ -2761,6 +2789,151 @@ async function handleApiRequest(request, env, ctx) {
     }
   }
 
+  // 获取邮件配置（管理员）
+  if (path === '/api/admin/email-settings' && method === 'GET') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized',
+        message: '需要管理员权限'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      const settings = await configCache.getEmailConfig(env.DB);
+
+      return new Response(JSON.stringify(
+        settings || { smtp_host: null, smtp_port: 465, sender_email: null, receiver_email: null, enable_notifications: 0 }
+      ), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+            if (error.message.includes('no such table')) {
+        try {
+          await env.DB.exec(D1_SCHEMAS.email_config);
+          return new Response(JSON.stringify({
+            smtp_host: null,
+            smtp_port: 465,
+            sender_email: null,
+            receiver_email: null,
+            enable_notifications: 0
+          }), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        } catch (createError) {
+                  }
+      }
+      return new Response(JSON.stringify({
+        error: 'Internal server error',
+        message: error.message
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // 设置邮件配置（管理员）
+  if (path === '/api/admin/email-settings' && method === 'POST') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized',
+        message: '需要管理员权限'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      const { smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications } = await request.json();
+      const updatedAt = Math.floor(Date.now() / 1000);
+      const enableNotifValue = (enable_notifications === true || enable_notifications === 1) ? 1 : 0;
+      const portValue = parseInt(smtp_port, 10) || 465;
+
+      await env.DB.prepare(`
+        UPDATE email_config SET smtp_host = ?, smtp_port = ?, sender_email = ?, sender_password = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
+      `).bind(smtp_host || null, portValue, sender_email || null, sender_password || null, receiver_email || null, enableNotifValue, updatedAt).run();
+
+      configCache.clearKey('email_config');
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+            return new Response(JSON.stringify({
+        error: 'Internal server error',
+        message: error.message
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // 发送测试邮件（管理员）
+  if (path === '/api/admin/test-email' && method === 'POST') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({
+        error: 'Unauthorized',
+        message: '需要管理员权限'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      const emailConfig = await configCache.getEmailConfig(env.DB);
+      if (!emailConfig?.smtp_host || !emailConfig?.sender_email || !emailConfig?.receiver_email) {
+        return new Response(JSON.stringify({
+          error: 'Bad request',
+          message: '请先完整配置邮件设置（SMTP服务器、发件人、收件人）'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      const testResult = await sendEmailNotification(
+        emailConfig.smtp_host,
+        emailConfig.smtp_port || 465,
+        emailConfig.sender_email,
+        emailConfig.sender_password,
+        emailConfig.receiver_email,
+        'VPS监控面板 - 邮件通知测试',
+        '<h2>✅ 邮件通知测试成功</h2><p>您的邮件通知设置已正确配置，可以正常发送邮件。</p><p>此消息由 VPS监控面板自动发送。</p>'
+      );
+
+      if (testResult.success) {
+        return new Response(JSON.stringify({ success: true, message: '测试邮件已发送' }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      } else {
+        return new Response(JSON.stringify({
+          error: 'Send failed',
+          message: testResult.error || '发送失败'
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+    } catch (error) {
+            return new Response(JSON.stringify({
+        error: 'Internal server error',
+        message: error.message
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
   // ==================== 展示设置API ====================
 
   // 获取首页模块展示设置（公开API - 所有用户可访问）
@@ -3127,18 +3300,27 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
     if (isFirstTimeDown) {
       const message = `🔴 ${targetLabel}故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+      const emailSubject = `🔴 ${targetLabel}故障告警 - ${siteDisplayName}`;
+      const emailHtml = `<h2>🔴 ${targetLabel}故障告警</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+      ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
         const message = `🔴 ${targetLabel}持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+        const emailSubject = `🔴 ${targetLabel}持续故障 - ${siteDisplayName}`;
+        const emailHtml = `<h2>🔴 ${targetLabel}持续故障</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+        ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
     const message = `✅ ${targetLabel}恢复: *${siteDisplayName}* 已恢复在线!\n地址: ${url}`;
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+    const emailSubject = `✅ ${targetLabel}恢复通知 - ${siteDisplayName}`;
+    const emailHtml = `<h2>✅ ${targetLabel}恢复通知</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+    ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml));
     newSiteLastNotifiedDownAt = null;
   }
 
@@ -3341,6 +3523,110 @@ async function sendTelegramNotificationOptimized(db, message, priority = 'normal
 
   } catch (error) {
     // 静默处理Telegram通知错误
+  }
+}
+
+// ==================== 邮件通知系统 ====================
+
+async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPassword, receiverEmail, subject, htmlBody) {
+  try {
+    const isSSL = smtpPort === 465 || smtpPort === 965;
+
+    const emailPayload = {
+      personalizations: [{
+        to: receiverEmail.split(',').map(email => ({ email: email.trim() }))
+      }],
+      from: { email: senderEmail },
+      subject: subject,
+      content: [{ type: 'text/html', value: htmlBody }]
+    };
+
+    let response;
+    if (smtpHost.includes('mailchannels') || smtpHost === 'mailchannels') {
+      response = await fetch('https://api.mailchannels.net/tx/v3/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPayload)
+      });
+    } else if (senderPassword && senderPassword.startsWith('re_')) {
+      response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${senderPassword}`
+        },
+        body: JSON.stringify({
+          from: senderEmail,
+          to: receiverEmail.split(',').map(e => e.trim()),
+          subject: subject,
+          html: htmlBody
+        })
+      });
+    } else {
+      const boundary = '----VPSMonitorBoundary' + Date.now();
+      const emailRaw = buildRawEmail(senderEmail, receiverEmail, subject, htmlBody, boundary);
+
+      response = await fetch(`https://api.smtp2go.com/v3/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: senderPassword,
+          to: receiverEmail.split(',').map(e => e.trim()),
+          sender: senderEmail,
+          subject: subject,
+          html_body: htmlBody
+        })
+      });
+
+      if (!response.ok) {
+        return { success: false, error: 'SMTP发送失败: ' + (await response.text()) };
+      }
+      return { success: true };
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { success: false, error: errorText };
+    }
+    return { success: true };
+
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function buildRawEmail(from, to, subject, htmlBody, boundary) {
+  return [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: =?UTF-8?B?${btoa(subject)}?=`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=UTF-8`,
+    ``,
+    htmlBody
+  ].join('\r\n');
+}
+
+async function sendEmailNotificationOptimized(db, subject, htmlBody, priority = 'normal') {
+  try {
+    const emailConfig = await configCache.getEmailConfig(db);
+
+    if (!emailConfig?.enable_notifications || !emailConfig?.smtp_host || !emailConfig?.sender_email || !emailConfig?.receiver_email) {
+      return;
+    }
+
+    await sendEmailNotification(
+      emailConfig.smtp_host,
+      emailConfig.smtp_port || 465,
+      emailConfig.sender_email,
+      emailConfig.sender_password,
+      emailConfig.receiver_email,
+      subject,
+      htmlBody
+    );
+
+  } catch (error) {
+    // 静默处理邮件通知错误
   }
 }
 
@@ -4751,6 +5037,54 @@ function getAdminHtml() {
                         <button type="button" id="saveBackgroundSettingsBtn" class="btn btn-info">保存背景设置</button>
                     </form>
                 </div>
+
+                <!-- 分隔线 -->
+                <hr class="my-4">
+
+                <!-- 邮件通知设置部分 -->
+                <div>
+                    <h5 class="card-title mb-3">
+                        <i class="bi bi-envelope me-2"></i>邮件通知设置
+                    </h5>
+
+                    <form id="emailSettingsForm">
+                        <div class="mb-3">
+                            <label for="emailSmtpHost" class="form-label">SMTP 服务器</label>
+                            <input type="text" class="form-control" id="emailSmtpHost" placeholder="例如: smtp.qq.com">
+                            <div class="form-text">QQ邮箱: smtp.qq.com | 163邮箱: smtp.163.com | Gmail: smtp.gmail.com</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emailSmtpPort" class="form-label">SMTP 端口</label>
+                            <input type="number" class="form-control" id="emailSmtpPort" placeholder="465 或 587" value="465" min="1" max="65535">
+                            <div class="form-text">SSL通常用465, TLS/STARTTLS用587</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="emailSender" class="form-label">发件人邮箱</label>
+                                <input type="email" class="form-control" id="emailSender" placeholder="your@email.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="emailPassword" class="form-label">授权码/密码</label>
+                                <input type="password" class="form-control" id="emailPassword" placeholder="邮箱授权码或密码">
+                                <div class="form-text">QQ邮箱请使用授权码而非密码</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emailReceiver" class="form-label">收件人邮箱</label>
+                            <input type="email" class="form-control" id="emailReceiver" placeholder="receiver@email.com">
+                            <div class="form-text">多个邮箱用英文逗号分隔</div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="enableEmailNotifications">
+                            <label class="form-check-label" for="enableEmailNotifications">
+                                启用邮件通知
+                            </label>
+                        </div>
+                        <div id="emailSettingsAlert" class="alert d-none" role="alert"></div>
+                        <button type="button" id="saveEmailSettingsBtn" class="btn btn-primary">保存邮件设置</button>
+                        <button type="button" id="testEmailBtn" class="btn btn-outline-secondary ms-2">发送测试邮件</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -5287,7 +5621,7 @@ hr.my-4 {
 }
 
 [data-bs-theme="dark"] .card-title i {
-    color: #94a3b8;
+    color: #ffffff !important;
 }
 
 /* VPS监控面板标题 - 蓝色加粗 */
@@ -5644,7 +5978,7 @@ body {
 }
 
 /* Custom styles for non-disruptive alerts in admin page */
-#serverAlert, #siteAlert, #telegramSettingsAlert {
+#serverAlert, #siteAlert, #telegramSettingsAlert, #emailSettingsAlert {
     position: fixed !important; /* Use !important to override Bootstrap if necessary */
     top: 70px; /* Below navbar */
     left: 50%;
@@ -5661,25 +5995,25 @@ body {
     /* Ensure d-none works to hide them, !important might be needed if Bootstrap's .alert.d-none is too specific */
 }
 
-#serverAlert.d-none, #siteAlert.d-none, #telegramSettingsAlert.d-none {
+#serverAlert.d-none, #siteAlert.d-none, #telegramSettingsAlert.d-none, #emailSettingsAlert.d-none {
     display: none !important;
 }
 
 /* Semi-transparent backgrounds for different alert types */
 /* Light Theme Overrides for fixed alerts */
-#serverAlert.alert-success, #siteAlert.alert-success, #telegramSettingsAlert.alert-success {
+#serverAlert.alert-success, #siteAlert.alert-success, #telegramSettingsAlert.alert-success, #emailSettingsAlert.alert-success {
     color: #0f5132; /* Bootstrap success text color */
     background-color: rgba(209, 231, 221, 0.95) !important; /* Semi-transparent success, !important for specificity */
     border-color: rgba(190, 221, 208, 0.95) !important;
 }
 
-#serverAlert.alert-danger, #siteAlert.alert-danger, #telegramSettingsAlert.alert-danger {
+#serverAlert.alert-danger, #siteAlert.alert-danger, #telegramSettingsAlert.alert-danger, #emailSettingsAlert.alert-danger {
     color: #842029; /* Bootstrap danger text color */
     background-color: rgba(248, 215, 218, 0.95) !important; /* Semi-transparent danger */
     border-color: rgba(245, 198, 203, 0.95) !important;
 }
 
-#serverAlert.alert-warning, #siteAlert.alert-warning, #telegramSettingsAlert.alert-warning { /* For siteAlert if it uses warning */
+#serverAlert.alert-warning, #siteAlert.alert-warning, #telegramSettingsAlert.alert-warning, #emailSettingsAlert.alert-warning { /* For siteAlert if it uses warning */
     color: #664d03; /* Bootstrap warning text color */
     background-color: rgba(255, 243, 205, 0.95) !important; /* Semi-transparent warning */
     border-color: rgba(255, 238, 186, 0.95) !important;
@@ -5951,7 +6285,8 @@ body {
         /* Dark Theme Overrides for fixed alerts */
         [data-bs-theme="dark"] #serverAlert.alert-success,
         [data-bs-theme="dark"] #siteAlert.alert-success,
-        [data-bs-theme="dark"] #telegramSettingsAlert.alert-success {
+        [data-bs-theme="dark"] #telegramSettingsAlert.alert-success,
+        [data-bs-theme="dark"] #emailSettingsAlert.alert-success {
             color: #75b798; /* Lighter green text for dark theme */
             background-color: rgba(40, 167, 69, 0.85) !important; /* Darker semi-transparent success */
             border-color: rgba(34, 139, 57, 0.85) !important;
@@ -5959,7 +6294,8 @@ body {
 
         [data-bs-theme="dark"] #serverAlert.alert-danger,
         [data-bs-theme="dark"] #siteAlert.alert-danger,
-        [data-bs-theme="dark"] #telegramSettingsAlert.alert-danger {
+        [data-bs-theme="dark"] #telegramSettingsAlert.alert-danger,
+        [data-bs-theme="dark"] #emailSettingsAlert.alert-danger {
             color: #ea868f; /* Lighter red text for dark theme */
             background-color: rgba(220, 53, 69, 0.85) !important; /* Darker semi-transparent danger */
             border-color: rgba(187, 45, 59, 0.85) !important;
@@ -5967,7 +6303,8 @@ body {
 
         [data-bs-theme="dark"] #serverAlert.alert-warning,
         [data-bs-theme="dark"] #siteAlert.alert-warning,
-        [data-bs-theme="dark"] #telegramSettingsAlert.alert-warning {
+        [data-bs-theme="dark"] #telegramSettingsAlert.alert-warning,
+        [data-bs-theme="dark"] #emailSettingsAlert.alert-warning {
             color: #ffd373; /* Lighter yellow text for dark theme */
             background-color: rgba(255, 193, 7, 0.85) !important; /* Darker semi-transparent warning */
             border-color: rgba(217, 164, 6, 0.85) !important;
@@ -6072,19 +6409,19 @@ body.custom-background-enabled .footer {
 
 /* 表格透明度调整 - 避免与卡片背景叠加 */
 body.custom-background-enabled .table {
-    background-color: rgba(255, 255, 255, 0.72) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.55)) !important;
     backdrop-filter: saturate(140%) blur(12px);
     -webkit-backdrop-filter: saturate(140%) blur(12px);
 }
 
 body.custom-background-enabled .table th {
-    background-color: rgba(255, 255, 255, 0.78) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.6)) !important;
     backdrop-filter: saturate(140%) blur(10px);
     -webkit-backdrop-filter: saturate(140%) blur(10px);
 }
 
 body.custom-background-enabled .table td {
-    background-color: rgba(255, 255, 255, 0.68) !important;
+    background-color: rgba(255, 255, 255, calc(var(--page-opacity) * 0.2 + 0.5)) !important;
 }
 
 /* 输入框 - 保证可读性 */
@@ -6241,19 +6578,19 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的表格透明度调整 - 避免与卡片背景叠加 */
 [data-bs-theme="dark"] body.custom-background-enabled .table {
-    background-color: rgba(15, 20, 30, 0.78) !important;
+    background-color: rgba(15, 20, 30, calc(var(--page-opacity) * 0.3 + 0.5)) !important;
     backdrop-filter: saturate(120%) blur(12px);
     -webkit-backdrop-filter: saturate(120%) blur(12px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .table th {
-    background-color: rgba(15, 20, 30, 0.85) !important;
+    background-color: rgba(15, 20, 30, calc(var(--page-opacity) * 0.3 + 0.55)) !important;
     backdrop-filter: saturate(120%) blur(10px);
     -webkit-backdrop-filter: saturate(120%) blur(10px);
 }
 
 [data-bs-theme="dark"] body.custom-background-enabled .table td {
-    background-color: rgba(15, 20, 30, 0.72) !important;
+    background-color: rgba(15, 20, 30, calc(var(--page-opacity) * 0.3 + 0.45)) !important;
 }
 
 /* 暗色主题下的输入框 - 保证可读性 */
@@ -6425,6 +6762,7 @@ body.custom-background-enabled .form-control {
 body.custom-background-enabled #serverAlert,
 body.custom-background-enabled #siteAlert,
 body.custom-background-enabled #telegramSettingsAlert,
+body.custom-background-enabled #emailSettingsAlert,
 body.custom-background-enabled #backgroundSettingsAlert {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -7347,19 +7685,7 @@ body {
 }
 
 .navbar-brand:not(:has(.brand-text))::before {
-    content: "⌁";
-    width: 30px;
-    height: 30px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    color: #fff;
-    font-size: 1.12rem;
-    font-weight: 900;
-    line-height: 1;
-    background: linear-gradient(135deg, var(--apple-blue), var(--apple-blue-2));
-    box-shadow: 0 8px 18px rgba(0, 122, 255, 0.22);
+    content: none;
 }
 
 .navbar-brand:not(:has(.brand-text))::after {
@@ -7519,8 +7845,8 @@ body {
 }
 
 [data-bs-theme="dark"] .card-title i {
-    background: rgba(15, 20, 30, 0.9) !important;
-    color: #8ab4ff !important;
+    background: rgba(30, 40, 60, 0.9) !important;
+    color: #ffffff !important;
     box-shadow: none;
 }
 
@@ -9764,6 +10090,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadTelegramSettings();
     // 加载背景设置
     loadBackgroundSettings();
+    // 加载邮件设置
+    loadEmailSettings();
     // 加载全局设置 (VPS Report Interval) - will use serverAlert for notifications
     loadGlobalSettings();
     // 加载首页展示设置
@@ -9938,6 +10266,15 @@ function initEventListeners() {
     // Background Settings Event Listeners
     document.getElementById('saveBackgroundSettingsBtn').addEventListener('click', function() {
         saveBackgroundSettings();
+    });
+
+    // Email Settings Event Listeners
+    document.getElementById('saveEmailSettingsBtn').addEventListener('click', function() {
+        saveEmailSettings();
+    });
+
+    document.getElementById('testEmailBtn').addEventListener('click', function() {
+        testEmail();
     });
 
     // 透明度滑块实时预览
@@ -11376,6 +11713,81 @@ function updateOpacityPreview() {
 }
 
 
+// --- Email Settings Functions ---
+
+async function loadEmailSettings() {
+    try {
+        const settings = await apiRequest('/api/admin/email-settings');
+        if (settings) {
+            document.getElementById('emailSmtpHost').value = settings.smtp_host || '';
+            document.getElementById('emailSmtpPort').value = settings.smtp_port || 465;
+            document.getElementById('emailSender').value = settings.sender_email || '';
+            document.getElementById('emailPassword').value = settings.sender_password || '';
+            document.getElementById('emailReceiver').value = settings.receiver_email || '';
+            document.getElementById('enableEmailNotifications').checked = !!settings.enable_notifications;
+        }
+    } catch (error) {
+                showToast('danger', '加载邮件设置失败: ' + error.message);
+    }
+}
+
+async function saveEmailSettings() {
+    const smtpHost = document.getElementById('emailSmtpHost').value.trim();
+    const smtpPort = parseInt(document.getElementById('emailSmtpPort').value, 10) || 465;
+    const senderEmail = document.getElementById('emailSender').value.trim();
+    const senderPassword = document.getElementById('emailPassword').value;
+    const receiverEmail = document.getElementById('emailReceiver').value.trim();
+    let enableNotifications = document.getElementById('enableEmailNotifications').checked;
+
+    if (!smtpHost || !senderEmail || !receiverEmail) {
+        enableNotifications = false;
+        document.getElementById('enableEmailNotifications').checked = false;
+        showToast('warning', 'SMTP服务器、发件人和收件人不能为空才能启用通知');
+    }
+
+    try {
+        await apiRequest('/api/admin/email-settings', {
+            method: 'POST',
+            body: JSON.stringify({
+                smtp_host: smtpHost,
+                smtp_port: smtpPort,
+                sender_email: senderEmail,
+                sender_password: senderPassword,
+                receiver_email: receiverEmail,
+                enable_notifications: enableNotifications
+            })
+        });
+
+        showToast('success', '邮件设置已成功保存');
+
+    } catch (error) {
+            showToast('danger', '保存邮件设置失败: ' + error.message);
+    }
+}
+
+async function testEmail() {
+    const btn = document.getElementById('testEmailBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>发送中...';
+
+    try {
+        const result = await apiRequest('/api/admin/test-email', { method: 'POST' });
+        showToast('success', result.message || '测试邮件已发送，请检查收件箱');
+    } catch (error) {
+            showToast('danger', '发送测试邮件失败: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '发送测试邮件';
+    }
+}
+
+function showEmailAlert(message, type = 'info') {
+    const alertEl = document.getElementById('emailSettingsAlert');
+    alertEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
+    alertEl.classList.add('alert', 'alert-' + type);
+    alertEl.textContent = message;
+    setTimeout(() => alertEl.classList.add('d-none'), 5000);
+}
 
 // --- Global Settings Functions (VPS Report Interval) ---
 async function loadDisplaySettings() {
