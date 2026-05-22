@@ -3043,6 +3043,29 @@ async function handleApiRequest(request, env, ctx) {
 
 // 旧的VPS离线检查函数已移除，改为前端状态变化检测 + 定时提醒
 
+function isTcpPortUrl(url) {
+  return /^[\w.-]+:\d{1,5}$/.test(url);
+}
+
+async function checkTcpPort(url) {
+  const startTime = Date.now();
+  try {
+    const response = await fetch(`http://${url}`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10000)
+    });
+    return { status: 'UP', statusCode: response.status, responseTime: Date.now() - startTime };
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    if (error.name === 'TimeoutError') {
+      return { status: 'TIMEOUT', statusCode: null, responseTime };
+    }
+    if (error.cause && (error.cause.code === 'ECONNREFUSED' || error.cause.code === 'ENOTFOUND' || error.cause.code === 'NET_ECONNREFUSED')) {
+      return { status: 'DOWN', statusCode: null, responseTime };
+    }
+    return { status: 'UP', statusCode: null, responseTime };
+  }
+}
 
 async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
   const { id, url, name } = site; // Added name
@@ -3067,16 +3090,22 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
     }
   const NOTIFICATION_INTERVAL_SECONDS = 1 * 60 * 60; // 1 hour
 
-
   try {
-    const response = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(15000) });
-    newResponseTime = Date.now() - startTime;
-    newStatusCode = response.status;
-
-    if (response.ok || (response.status >= 300 && response.status < 500)) { // 2xx, 3xx, and 4xx are considered UP
-      newStatus = 'UP';
+    if (isTcpPortUrl(url)) {
+      const result = await checkTcpPort(url);
+      newStatus = result.status;
+      newStatusCode = result.statusCode;
+      newResponseTime = result.responseTime;
     } else {
-      newStatus = 'DOWN';
+      const response = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      newResponseTime = Date.now() - startTime;
+      newStatusCode = response.status;
+
+      if (response.ok || (response.status >= 300 && response.status < 500)) {
+        newStatus = 'UP';
+      } else {
+        newStatus = 'DOWN';
+      }
     }
   } catch (error) {
     newResponseTime = Date.now() - startTime;
@@ -4356,33 +4385,7 @@ function getLoginHtml() {
     <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <svg class="me-2" width="32" height="32" viewBox="0 0 32 32">
-                    <defs>
-                        <radialGradient id="navBg2" cx="0.3" cy="0.3">
-                            <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
-                            <stop offset="100%" stop-color="#0277bd" stop-opacity="0.8"/>
-                        </radialGradient>
-                        <linearGradient id="navEcg2" x1="0%" x2="100%">
-                            <stop offset="0%" stop-color="#f08"/>
-                            <stop offset="50%" stop-color="#0f8"/>
-                            <stop offset="100%" stop-color="#80f"/>
-                        </linearGradient>
-                    </defs>
-                    <circle cx="16" cy="16" r="15" fill="url(#navBg2)" stroke="#0277bd" stroke-width="1.5"/>
-                    <circle cx="16" cy="16" r="13" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>
-                    <line x1="4" y1="16" x2="28" y2="16" stroke="#b3e5fc" stroke-width="0.5" opacity="0.8"/>
-                    <path id="navP2" d="M4 16L8 16L9 15L10 17L11 14L12 18L13 10L14 22L15 16L28 16" fill="none" stroke="url(#navEcg2)" stroke-width="2.8"/>
-                    <path d="M4 16L8 16L9 15L10 17L11 14L12 18L13 10L14 22L15 16L28 16" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.7"/>
-                    <circle r="1.5" fill="#fff">
-                        <animateMotion dur="2s" repeatCount="indefinite">
-                            <mpath href="#navP2"/>
-                        </animateMotion>
-                    </circle>
-                    <circle cx="16" cy="16" r="8" fill="none" stroke="#f08" stroke-width="0.5" opacity="0.6">
-                        <animate attributeName="r" values="8;12;8" dur="3s" repeatCount="indefinite"/>
-                        <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </svg>
+                <span class="brand-mark"><i class="bi bi-activity"></i></span>
                 VPS监控面板
             </a>
             <div class="d-flex align-items-center">
@@ -4398,11 +4401,7 @@ function getLoginHtml() {
         <div class="login-panel-wrap">
             <div class="card login-card">
                 <div class="card-header login-card-header">
-                    <div class="login-icon"><i class="bi bi-shield-lock"></i></div>
-                    <div>
-                        <div class="login-kicker">Secure Access</div>
-                        <h4 class="card-title mb-0">管理员登录</h4>
-                    </div>
+                    <h4 class="card-title mb-0 text-center">管理员登录</h4>
                 </div>
                 <div class="card-body login-card-body">
 
@@ -4472,33 +4471,7 @@ function getAdminHtml() {
     <nav class="navbar navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <svg class="me-2" width="32" height="32" viewBox="0 0 32 32">
-                    <defs>
-                        <radialGradient id="navBg3" cx="0.3" cy="0.3">
-                            <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
-                            <stop offset="100%" stop-color="#0277bd" stop-opacity="0.8"/>
-                        </radialGradient>
-                        <linearGradient id="navEcg3" x1="0%" x2="100%">
-                            <stop offset="0%" stop-color="#f08"/>
-                            <stop offset="50%" stop-color="#0f8"/>
-                            <stop offset="100%" stop-color="#80f"/>
-                        </linearGradient>
-                    </defs>
-                    <circle cx="16" cy="16" r="15" fill="url(#navBg3)" stroke="#0277bd" stroke-width="1.5"/>
-                    <circle cx="16" cy="16" r="13" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>
-                    <line x1="4" y1="16" x2="28" y2="16" stroke="#b3e5fc" stroke-width="0.5" opacity="0.8"/>
-                    <path id="navP3" d="M4 16L8 16L9 15L10 17L11 14L12 18L13 10L14 22L15 16L28 16" fill="none" stroke="url(#navEcg3)" stroke-width="2.8"/>
-                    <path d="M4 16L8 16L9 15L10 17L11 14L12 18L13 10L14 22L15 16L28 16" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.7"/>
-                    <circle r="1.5" fill="#fff">
-                        <animateMotion dur="2s" repeatCount="indefinite">
-                            <mpath href="#navP3"/>
-                        </animateMotion>
-                    </circle>
-                    <circle cx="16" cy="16" r="8" fill="none" stroke="#f08" stroke-width="0.5" opacity="0.6">
-                        <animate attributeName="r" values="8;12;8" dur="3s" repeatCount="indefinite"/>
-                        <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
-                    </circle>
-                </svg>
+                <span class="brand-mark"><i class="bi bi-activity"></i></span>
                 VPS监控面板
             </a>
             <div class="d-flex align-items-center flex-wrap">
@@ -4859,8 +4832,8 @@ function getAdminHtml() {
                             <input type="text" class="form-control" id="siteName">
                         </div>
                         <div class="mb-3">
-                            <label for="siteUrl" class="form-label">网站URL</label>
-                            <input type="url" class="form-control" id="siteUrl" placeholder="https://example.com" required>
+                            <label for="siteUrl" class="form-label">监控地址</label>
+                            <input type="text" class="form-control" id="siteUrl" placeholder="https://example.com 或 192.168.1.1:25565" required>
                         </div>
                         <!-- Removed siteEnableFrequentNotifications checkbox -->
                     </form>
@@ -6295,9 +6268,24 @@ body.custom-background-enabled .table-hover > tbody > tr:hover > * {
 
 /* 暗色主题下的下拉菜单透明度调整 */
 [data-bs-theme="dark"] body.custom-background-enabled .dropdown-menu {
-    background-color: rgba(30, 35, 45, var(--page-opacity)) !important;
+    background-color: rgba(30, 35, 45, 0.92) !important;
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: rgba(30, 35, 45, 0.92) !important;
+    backdrop-filter: saturate(140%) blur(16px);
+    -webkit-backdrop-filter: saturate(140%) blur(16px);
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: #e2e8f0 !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
 }
 
 /* 暗色主题下的滑块完全透明化 - 完整重置 */
@@ -7433,8 +7421,15 @@ body {
 .navbar .btn-outline-light:hover,
 .navbar .nav-link:hover {
     color: #ffffff !important;
-    background: linear-gradient(135deg, var(--apple-blue), var(--apple-purple)) !important;
+    background: rgba(0, 0, 0, 0.85) !important;
     border-color: transparent !important;
+}
+
+[data-bs-theme="dark"] .navbar .btn-outline-light:hover,
+[data-bs-theme="dark"] .nav-link:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .monitor-shell,
@@ -11070,18 +11065,29 @@ function editSite(siteId) {
 
 // 保存网站（添加或更新）
 async function saveSite() {
-    const siteId = document.getElementById('siteId').value; // Get ID from hidden input
+    const siteId = document.getElementById('siteId').value;
     const siteName = document.getElementById('siteName').value.trim();
     const siteUrl = document.getElementById('siteUrl').value.trim();
-    // const enableFrequentNotifications = document.getElementById('siteEnableFrequentNotifications').checked; // Removed
 
     if (!siteUrl) {
-        showToast('warning', '请输入网站URL');
+        showToast('warning', '请输入监控地址');
         return;
     }
-    if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
-         showToast('warning', 'URL必须以 http:// 或 https:// 开头');
+
+    const tcpPortPattern = /^[\w.-]+:\d{1,5}$/;
+    const isTcpPort = tcpPortPattern.test(siteUrl);
+
+    if (!isTcpPort && !siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+         showToast('warning', '请输入有效的地址：URL需以 http:// 或 https:// 开头，或使用 格式:域名/IP:端口');
          return;
+    }
+
+    if (isTcpPort) {
+        const port = parseInt(siteUrl.split(':')[1], 10);
+        if (port < 1 || port > 65535) {
+            showToast('warning', '端口号必须在 1-65535 之间');
+            return;
+        }
     }
 
     const requestBody = {
