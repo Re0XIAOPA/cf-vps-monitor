@@ -3545,97 +3545,37 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
     const receivers = receiverEmail.split(',').map(e => e.trim()).filter(e => e);
 
     if (!senderPassword || !senderPassword.trim()) {
-      return { success: false, error: '未配置授权码或API Key' };
+      return { success: false, error: '未配置授权码或密码' };
     }
 
-    let response;
     const encodedSubject = btoa(unescape(encodeURIComponent(subject)));
 
-    if (smtpHost.includes('mailchannels') || smtpHost === 'mailchannels') {
-      response = await fetch('https://api.mailchannels.net/tx/v3/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          personalizations: [{ to: receivers.map(email => ({ email })) }],
-          from: { email: senderEmail },
-          subject: subject,
-          content: [{ type: 'text/html', value: htmlBody }]
-        })
-      });
-    } else if (senderPassword.startsWith('re_')) {
-      response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + senderPassword
-        },
-        body: JSON.stringify({
-          from: senderEmail,
-          to: receivers,
-          subject: subject,
-          html: htmlBody
-        })
-      });
-    } else {
-      response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + senderPassword
-        },
-        body: JSON.stringify({
-          from: senderEmail,
-          to: receivers,
-          subject: subject,
-          html: htmlBody
-        })
-      });
+    let response = await fetch('https://api.mailchannels.net/tx/v3/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personalizations: [{ to: receivers.map(email => ({ email })) }],
+        from: { email: senderEmail },
+        subject: subject,
+        content: [{ type: 'text/html', value: htmlBody }]
+      })
+    });
 
-      if (!response.ok && response.status === 401) {
-        return { 
-          success: false, 
-          error: 'API Key 无效。请使用 Resend API Key (以 re_ 开头)。获取地址: https://resend.com/api-keys' 
-        };
-      }
+    if (response.ok) return { success: true };
 
-      if (!response.ok && response.status === 422) {
-        const errText = await response.text();
-        return { 
-          success: false, 
-          error: '发件域名未验证。请在 Resend 控制台添加并验证发件人域名: ' + senderEmail.split('@')[1] 
-        };
-      }
+    const errorText = await response.text();
+    let errorMsg = '邮件发送失败';
+    try {
+      const errJson = JSON.parse(errorText);
+      errorMsg = errJson.errors?.[0] || errJson.message || errJson.error || errorText;
+    } catch(e) {
+      errorMsg = errorText.substring(0, 200);
     }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMsg = '邮件发送失败';
-      try {
-        const errJson = JSON.parse(errorText);
-        errorMsg = errJson.message || errJson.error?.message || errJson.name || errorText;
-      } catch(e) {
-        errorMsg = errorText.substring(0, 200);
-      }
-      return { success: false, error: errorMsg };
-    }
-    return { success: true };
+    return { success: false, error: errorMsg };
 
   } catch (error) {
     return { success: false, error: error.message };
   }
-}
-
-function buildRawEmail(from, to, subject, htmlBody, boundary) {
-  const encodedSubject = btoa(unescape(encodeURIComponent(subject)));
-  return [
-    `From: ${from}`,
-    `To: ${to}`,
-    `Subject: =?UTF-8?B?${encodedSubject}?=`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/html; charset=UTF-8`,
-    ``,
-    htmlBody
-  ].join('\r\n');
 }
 
 async function sendEmailNotificationOptimized(db, subject, htmlBody, priority = 'normal') {
@@ -5080,30 +5020,30 @@ function getAdminHtml() {
 
                     <form id="emailSettingsForm">
                         <div class="row mb-3">
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <label for="emailSmtpHost" class="form-label">SMTP 服务器地址</label>
-                                <input type="text" class="form-control" id="emailSmtpHost" placeholder="resend / mailchannels (或留空使用 Resend)">
-                                <div class="form-text">填 resend 用 Resend 发送, mailchannels 用 CF 官方发送</div>
+                                <input type="text" class="form-control" id="emailSmtpHost" placeholder="例如: smtp.qq.com">
+                                <div class="form-text">QQ邮箱: smtp.qq.com / 163邮箱: smtp.163.com / Gmail: smtp.gmail.com / Outlook: smtp-mail.outlook.com</div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="emailSmtpPort" class="form-label">端口</label>
                                 <input type="number" class="form-control" id="emailSmtpPort" placeholder="465" value="465" min="1" max="65535">
+                                <div class="form-text">SSL: 465 / TLS: 587</div>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="emailSender" class="form-label">发件人邮箱</label>
-                                <input type="email" class="form-control" id="emailSender" placeholder="your@qq.com">
+                                <input type="email" class="form-control" id="emailSender" placeholder="例如: your@qq.com">
                             </div>
                             <div class="col-md-6">
                                 <label for="emailPassword" class="form-label">授权码 / 密码</label>
-                            <input type="password" class="form-control" id="emailPassword" placeholder="re_ 开头的 Resend API Key">
-                            <div class="form-text">推荐使用 Resend: <a href="https://resend.com" target="_blank">resend.com</a> (免费3000封/月)</div>
+                                <input type="password" class="form-control" id="emailPassword" placeholder="QQ/163填授权码, Gmail填应用密码">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="emailReceiver" class="form-label">收件人邮箱</label>
-                            <input type="email" class="form-control" id="emailReceiver" placeholder="receiver@xxx.com">
+                            <input type="email" class="form-control" id="emailReceiver" placeholder="例如: receiver@xxx.com">
                             <div class="form-text">多个收件人用英文逗号分隔</div>
                         </div>
                         <div class="form-check mb-3">
