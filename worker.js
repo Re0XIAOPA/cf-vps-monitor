@@ -2851,13 +2851,14 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     try {
-      const { smtp_host, sender_email, sender_password, receiver_email, enable_notifications } = await request.json();
+      const { smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications } = await request.json();
       const updatedAt = Math.floor(Date.now() / 1000);
       const enableNotifValue = (enable_notifications === true || enable_notifications === 1) ? 1 : 0;
+      const portValue = parseInt(smtp_port, 10) || 465;
 
       await env.DB.prepare(`
-        UPDATE email_config SET smtp_host = ?, sender_email = ?, sender_password = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
-      `).bind(smtp_host || null, sender_email || null, sender_password || null, receiver_email || null, enableNotifValue, updatedAt).run();
+        UPDATE email_config SET smtp_host = ?, smtp_port = ?, sender_email = ?, sender_password = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
+      `).bind(smtp_host || null, portValue, sender_email || null, sender_password || null, receiver_email || null, enableNotifValue, updatedAt).run();
 
       configCache.clearKey('email_config');
 
@@ -2902,7 +2903,7 @@ async function handleApiRequest(request, env, ctx) {
 
       const testResult = await sendEmailNotification(
         emailConfig.smtp_host,
-        465,
+        emailConfig.smtp_port || 465,
         emailConfig.sender_email,
         emailConfig.sender_password,
         emailConfig.receiver_email,
@@ -3533,10 +3534,11 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
     const receivers = receiverEmail.split(',').map(e => e.trim()).filter(e => e);
 
     if (!senderPassword || !senderPassword.trim()) {
-      return { success: false, error: '未配置授权码或密码' };
+      return { success: false, error: '未配置授权码或API Key' };
     }
 
     let response;
+    const encodedSubject = btoa(unescape(encodeURIComponent(subject)));
 
     if (smtpHost.includes('mailchannels') || smtpHost === 'mailchannels') {
       response = await fetch('https://api.mailchannels.net/tx/v3/send', {
@@ -3563,60 +3565,35 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
           html: htmlBody
         })
       });
-    } else if (senderPassword.startsWith('smtp-') || senderPassword.length > 30) {
-      response = await fetch('https://api.smtp2go.com/v3/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: senderPassword,
-          to: receivers,
-          sender: senderEmail,
-          subject: subject,
-          html_body: htmlBody
-        })
-      });
-    } else if (senderPassword.startsWith('xkeysib-') || smtpHost.includes('brevo') || smtpHost.includes('sendinblue')) {
-      response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    } else {
+      response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': senderPassword.replace('xkeysib-', '')
+          'Authorization': 'Bearer ' + senderPassword
         },
         body: JSON.stringify({
-          sender: { email: senderEmail },
-          to: receivers.map(email => ({ email })),
-          subject: subject,
-          htmlContent: htmlBody
-        })
-      });
-    } else if (senderPassword.startsWith('api-') || smtpHost.includes('mailgun')) {
-      const domain = senderEmail.split('@')[1] || 'mg.example.com';
-      response = await fetch('https://api.mailgun.net/v3/' + domain + '/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic ' + btoa('api:' + senderPassword)
-        },
-        body: new URLSearchParams({
           from: senderEmail,
-          to: receivers.join(','),
+          to: receivers,
           subject: subject,
           html: htmlBody
-        }).toString()
-      });
-    } else {
-      const encodedSubject = btoa(unescape(encodeURIComponent(subject)));
-      response = await fetch('https://api.smtp2go.com/v3/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: senderPassword,
-          to: receivers,
-          sender: senderEmail,
-          subject: subject,
-          html_body: htmlBody
         })
       });
+
+      if (!response.ok && response.status === 401) {
+        return { 
+          success: false, 
+          error: 'API Key 无效。请使用 Resend API Key (以 re_ 开头)。获取地址: https://resend.com/api-keys' 
+        };
+      }
+
+      if (!response.ok && response.status === 422) {
+        const errText = await response.text();
+        return { 
+          success: false, 
+          error: '发件域名未验证。请在 Resend 控制台添加并验证发件人域名: ' + senderEmail.split('@')[1] 
+        };
+      }
     }
 
     if (!response.ok) {
@@ -3624,9 +3601,9 @@ async function sendEmailNotification(smtpHost, smtpPort, senderEmail, senderPass
       let errorMsg = '邮件发送失败';
       try {
         const errJson = JSON.parse(errorText);
-        errorMsg = errJson.message || errJson.error?.message || errorText;
+        errorMsg = errJson.message || errJson.error?.message || errJson.name || errorText;
       } catch(e) {
-        errorMsg = errorText;
+        errorMsg = errorText.substring(0, 200);
       }
       return { success: false, error: errorMsg };
     }
@@ -3660,7 +3637,7 @@ async function sendEmailNotificationOptimized(db, subject, htmlBody, priority = 
 
     await sendEmailNotification(
       emailConfig.smtp_host,
-      465,
+      emailConfig.smtp_port || 465,
       emailConfig.sender_email,
       emailConfig.sender_password,
       emailConfig.receiver_email,
@@ -5091,37 +5068,32 @@ function getAdminHtml() {
                     </h5>
 
                     <form id="emailSettingsForm">
-                        <div class="mb-3">
-                            <label for="emailSmtpHost" class="form-label">邮件服务商</label>
-                            <select class="form-select" id="emailServiceProvider" onchange="updateEmailProviderHint()">
-                                <option value="">自定义/其他</option>
-                                <option value="smtp2go">SMTP2Go (推荐)</option>
-                                <option value="resend">Resend (API: re_开头)</option>
-                                <option value="mailchannels">MailChannels</option>
-                                <option value="brevo">Brevo/SendinBlue</option>
-                                <option value="mailgun">Mailgun</option>
-                            </select>
-                            <div class="form-text mt-1" id="emailProviderHint">选择服务商或手动填写下方配置</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emailSmtpHost" class="form-label">SMTP 服务器 / API地址</label>
-                            <input type="text" class="form-control" id="emailSmtpHost" placeholder="例如: smtp2go / api.resend.com / mailchannels">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="emailSmtpHost" class="form-label">SMTP 服务器地址</label>
+                                <input type="text" class="form-control" id="emailSmtpHost" placeholder="resend / mailchannels (或留空使用 Resend)">
+                                <div class="form-text">填 resend 用 Resend 发送, mailchannels 用 CF 官方发送</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="emailSmtpPort" class="form-label">端口</label>
+                                <input type="number" class="form-control" id="emailSmtpPort" placeholder="465" value="465" min="1" max="65535">
+                            </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="emailSender" class="form-label">发件人邮箱</label>
-                                <input type="email" class="form-control" id="emailSender" placeholder="your@email.com">
+                                <input type="email" class="form-control" id="emailSender" placeholder="your@qq.com">
                             </div>
                             <div class="col-md-6">
-                                <label for="emailPassword" class="form-label">API Key / 授权码</label>
-                                <input type="password" class="form-control" id="emailPassword" placeholder="SMTP2Go API Key 或 Resend Key(re_)等">
-                                <div class="form-text" id="passwordHint">填写对应服务的 API Key 或授权码</div>
+                                <label for="emailPassword" class="form-label">授权码 / 密码</label>
+                            <input type="password" class="form-control" id="emailPassword" placeholder="re_ 开头的 Resend API Key">
+                            <div class="form-text">推荐使用 Resend: <a href="https://resend.com" target="_blank">resend.com</a> (免费3000封/月)</div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="emailReceiver" class="form-label">收件人邮箱</label>
                             <input type="email" class="form-control" id="emailReceiver" placeholder="receiver@xxx.com">
-                            <div class="form-text">多个邮箱用英文逗号分隔</div>
+                            <div class="form-text">多个收件人用英文逗号分隔</div>
                         </div>
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="enableEmailNotifications">
@@ -5130,7 +5102,7 @@ function getAdminHtml() {
                             </label>
                         </div>
                         <div id="emailSettingsAlert" class="alert d-none" role="alert"></div>
-                        <button type="button" id="saveEmailSettingsBtn" class="btn btn-primary">保存邮件设置</button>
+                        <button type="button" id="saveEmailSettingsBtn" class="btn btn-primary">保存设置</button>
                         <button type="button" id="testEmailBtn" class="btn btn-outline-secondary ms-2">发送测试邮件</button>
                     </form>
                 </div>
@@ -11776,6 +11748,7 @@ async function loadEmailSettings() {
         const settings = await apiRequest('/api/admin/email-settings');
         if (settings) {
             document.getElementById('emailSmtpHost').value = settings.smtp_host || '';
+            document.getElementById('emailSmtpPort').value = settings.smtp_port || 465;
             document.getElementById('emailSender').value = settings.sender_email || '';
             document.getElementById('emailPassword').value = settings.sender_password || '';
             document.getElementById('emailReceiver').value = settings.receiver_email || '';
@@ -11786,34 +11759,9 @@ async function loadEmailSettings() {
     }
 }
 
-function updateEmailProviderHint() {
-    const provider = document.getElementById('emailServiceProvider').value;
-    const hintEl = document.getElementById('emailProviderHint');
-    const passwordHint = document.getElementById('passwordHint');
-    const hostInput = document.getElementById('emailSmtpHost');
-
-    const hints = {
-        'smtp2go': { hint: '注册 smtp2go.com 免费账户获取 API Key，支持任意发件人', password: '填写 SMTP2Go API Key (以 smtp- 开头或长字符串)', host: 'smtp2go' },
-        'resend': { hint: '注册 resend.com 获取 API Key (re_开头)，需验证发件域名', password: '填写 Resend API Key (re_ 开头)', host: 'api.resend.com' },
-        'mailchannels': { hint: 'Cloudflare 官方邮件服务，需配置 DNS 记录', password: '无需密码，只需配置域名 DNS', host: 'mailchannels' },
-        'brevo': { hint: 'Brevo/SendinBlue 邮件服务，每月免费300封', password: '填写 Brevo API Key (xkeysib- 开头)', host: 'brevo' },
-        'mailgun': { hint: 'Mailgun 邮件服务，每月免费1000封', password: '填写 Mailgun Private API Key (api- 开头)', host: 'mailgun' }
-    };
-
-    if (provider && hints[provider]) {
-        hintEl.textContent = hints[provider].hint;
-        passwordHint.textContent = hints[provider].password;
-        if (hints[provider].host && !hostInput.value) {
-            hostInput.value = hints[provider].host;
-        }
-    } else {
-        hintEl.textContent = '选择服务商或手动填写下方配置';
-        passwordHint.textContent = '填写对应服务的 API Key 或授权码';
-    }
-}
-
 async function saveEmailSettings() {
     const smtpHost = document.getElementById('emailSmtpHost').value.trim();
+    const smtpPort = parseInt(document.getElementById('emailSmtpPort').value, 10) || 465;
     const senderEmail = document.getElementById('emailSender').value.trim();
     const senderPassword = document.getElementById('emailPassword').value;
     const receiverEmail = document.getElementById('emailReceiver').value.trim();
@@ -11830,6 +11778,7 @@ async function saveEmailSettings() {
             method: 'POST',
             body: JSON.stringify({
                 smtp_host: smtpHost,
+                smtp_port: smtpPort,
                 sender_email: senderEmail,
                 sender_password: senderPassword,
                 receiver_email: receiverEmail,
