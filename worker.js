@@ -3541,33 +3541,37 @@ async function sendEmailNotification(senderEmail, receiverEmail, subject, htmlBo
       return { success: false, error: '邮件配置不完整' };
     }
 
-    var response = await fetch('https://api.mailchannels.net/tx/v3/send', {
+    var payload = {
+      personalizations: [{ to: receivers.map(function(e) { return { email: e }; }) }],
+      from: { email: senderEmail, name: 'VPS监控面板' },
+      subject: subject,
+      content: [{ type: 'text/html', value: htmlBody }]
+    };
+
+    var response = await fetch('https://api.mailchannels.net/tx/v1/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        personalizations: [{ to: receivers.map(function(e) { return { email: e }; }) }],
-        from: { email: senderEmail },
-        subject: subject,
-        content: [{ type: 'text/html', value: htmlBody }]
-      })
+      body: JSON.stringify(payload)
     });
 
-    if (response.ok) {
+    var responseStatus = response.status;
+    var responseText = await response.text();
+
+    if (responseStatus >= 200 && responseStatus < 300) {
       return { success: true };
     }
 
-    var errorText = await response.text();
     var errorMsg = '邮件发送失败';
     try {
-      var errJson = JSON.parse(errorText);
-      errorMsg = (errJson.errors && errJson.errors[0]) || errJson.message || errJson.error || errorText;
+      var errJson = JSON.parse(responseText);
+      errorMsg = (errJson.errors && errJson.errors[0]) || errJson.message || errJson.error || responseText;
     } catch(ignored) {
-      errorMsg = errorText.substring(0, 300);
+      errorMsg = responseText.substring(0, 500);
     }
 
-    if (response.status === 401 || response.status === 403) {
+    if (responseStatus === 401 || responseStatus === 403) {
       var domain = senderEmail.split('@')[1] || '';
-      errorMsg = '发件域名 ' + domain + ' 未授权。请在 Cloudflare DNS 添加 TXT 记录: _mailchannels → v=mc1 cfid=你的区域ID';
+      errorMsg = '发件域名 ' + domain + ' 未授权(401)。确认: 1) DNS TXT _mailchannels 记录已全球生效 2) 发件邮箱域名必须与 DNS 记录所在域名一致 3) 区域ID正确(当前:' + domain + ')';
     }
 
     return { success: false, error: errorMsg };
