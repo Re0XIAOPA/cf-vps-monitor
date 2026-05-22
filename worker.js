@@ -3118,30 +3118,28 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
 
   const checkTime = Math.floor(Date.now() / 1000);
   const siteDisplayName = name || url;
-  let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt; // Preserve by default
+  const isTcp = isTcpPortUrl(url);
+  const targetLabel = isTcp ? '服务' : '网站';
+  let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt;
 
   if (['DOWN', 'TIMEOUT', 'ERROR'].includes(newStatus)) {
     const isFirstTimeDown = !['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus);
     if (isFirstTimeDown) {
-      // Site just went down
-      const message = `🔴 网站故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
+      const message = `🔴 ${targetLabel}故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
       newSiteLastNotifiedDownAt = checkTime;
-
     } else {
-      // Site is still down, check if 1-hour interval has passed for resend
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
-        const message = `🔴 网站持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
+        const message = `🔴 ${targetLabel}持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
-    // Site just came back up
-    const message = `✅ 网站恢复: *${siteDisplayName}* 已恢复在线!\n网址: ${url}`;
+    const message = `✅ ${targetLabel}恢复: *${siteDisplayName}* 已恢复在线!\n地址: ${url}`;
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-    newSiteLastNotifiedDownAt = null; // Clear notification timestamp as site is up
+    newSiteLastNotifiedDownAt = null;
   }
 
   // Update D1
@@ -3201,20 +3199,26 @@ async function checkWebsiteStatusOptimized(site, db, ctx) {
   const NOTIFICATION_INTERVAL_SECONDS = 1 * 60 * 60; // 1小时
 
   try {
-    // 优化：超时时间从15秒减少到10秒
-    const response = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(10000) // 10秒超时
-    });
-
-    newResponseTime = Date.now() - startTime;
-    newStatusCode = response.status;
-
-    if (response.ok || (response.status >= 300 && response.status < 500)) {
-      newStatus = 'UP';
+    if (isTcpPortUrl(url)) {
+      const result = await checkTcpPort(url);
+      newStatus = result.status;
+      newStatusCode = result.statusCode;
+      newResponseTime = result.responseTime;
     } else {
-      newStatus = 'DOWN';
+      const response = await fetch(url, {
+        method: 'HEAD',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(10000)
+      });
+
+      newResponseTime = Date.now() - startTime;
+      newStatusCode = response.status;
+
+      if (response.ok || (response.status >= 300 && response.status < 500)) {
+        newStatus = 'UP';
+      } else {
+        newStatus = 'DOWN';
+      }
     }
   } catch (error) {
     newResponseTime = Date.now() - startTime;
@@ -3227,25 +3231,26 @@ async function checkWebsiteStatusOptimized(site, db, ctx) {
 
   const checkTime = Math.floor(Date.now() / 1000);
   const siteDisplayName = name || url;
+  const isTcp = isTcpPortUrl(url);
+  const targetLabel = isTcp ? '服务' : '网站';
   let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt;
 
-  // 通知逻辑保持不变
   if (['DOWN', 'TIMEOUT', 'ERROR'].includes(newStatus)) {
     const isFirstTimeDown = !['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus);
     if (isFirstTimeDown) {
-      const message = `🔴 网站故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
+      const message = `🔴 ${targetLabel}故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
-        const message = `🔴 网站持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
+        const message = `🔴 ${targetLabel}持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
-    const message = `✅ 网站恢复: *${siteDisplayName}* 已恢复在线!\n网址: ${url}`;
+    const message = `✅ ${targetLabel}恢复: *${siteDisplayName}* 已恢复在线!\n地址: ${url}`;
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
     newSiteLastNotifiedDownAt = null;
   }
