@@ -3537,7 +3537,7 @@ async function sendTelegramNotificationOptimized(db, message, priority = 'normal
 async function sendEmailNotification(env, senderEmail, receiverEmail, subject, htmlBody) {
   try {
     if (!env || !env.EMAIL) {
-      return { success: false, error: 'send_email 绑定未配置，请在 wrangler.toml 中添加 [[send_email]] binding' };
+      return { success: false, error: 'send_email 绑定未配置。请在 Cloudflare Dashboard → Worker → 设置 → 绑定 中添加 Email Routing 绑定，名称填 EMAIL' };
     }
 
     var receivers = receiverEmail.split(',').map(function(e) { return e.trim(); }).filter(function(e) { return e; });
@@ -3545,7 +3545,7 @@ async function sendEmailNotification(env, senderEmail, receiverEmail, subject, h
       return { success: false, error: '邮件配置不完整' };
     }
 
-    var textBody = htmlBody.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim();
+    var textBody = htmlBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
     for (var i = 0; i < receivers.length; i++) {
       var msg = new EmailMessage(
