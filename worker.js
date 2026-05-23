@@ -3547,7 +3547,8 @@ async function sendEmailNotification(env, senderEmail, receiverEmail, subject, h
 
     for (var i = 0; i < receivers.length; i++) {
       var rawEmail = buildRawEmail(senderEmail, receivers[i], subject, htmlBody);
-      await env.EMAIL.send(rawEmail);
+      var msg = new EmailMessage(senderEmail, receivers[i], rawEmail);
+      await env.EMAIL.send(msg);
     }
 
     return { success: true };
