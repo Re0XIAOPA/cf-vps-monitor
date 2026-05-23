@@ -161,6 +161,39 @@ curl -O https://raw.githubusercontent.com/kadidalax/cf-vps-monitor/main/cf-vps-m
 4.  调整 `面透明度` 滑块。
 5.  点击 `保存背景设置`
 
+### 8. 配置邮件通知
+
+本系统使用 Cloudflare Email Routing 原生发信，**纯免费、零第三方**。
+
+**前置条件：**
+
+1.  登录 Cloudflare 控制台，进入你的域名（如 `blocktavern.cn`）。
+2.  左侧菜单 → **Email** → **Email Routing** → 开启。
+3.  添加一个**目标邮箱**（如你的 QQ/163/Gmail），并添加一个自定义地址（如 `noreply@你的域名.com`）。
+
+**配置步骤：**
+
+1.  **wrangler.toml 添加绑定：**
+    ```toml
+    [[send_email]]
+    name = "EMAIL"
+    ```
+    > 如果是通过 Cloudflare Dashboard 手动部署的，需在 Worker → 设置 → 绑定中手动添加一个 Email Routing 绑定，变量名填 `EMAIL`。
+
+2.  **管理后台配置：**
+    - 进入管理后台 → 邮件通知设置
+    - **发件人邮箱**：填写你 Cloudflare 域名下的邮箱（如 `noreply@blocktavern.cn`）
+    - **收件人邮箱**：填写接收通知的邮箱（如 `2762832501@qq.com`），多个用英文逗号分隔
+    - 勾选"启用邮件通知"
+    - 点击"保存设置"，然后"发送测试邮件"
+
+**邮件通知类型：**
+- 🟢 测试邮件：验证配置是否成功
+- 🔴 故障首次告警：网站/VPS 初次掉线时发送
+- 🔴 持续故障提醒：故障未恢复时的定期提醒
+- 🟢 恢复通知：故障恢复后发送
+
+
 ## 注意事项
 
 *   **Worker 和 D1 每日配额:** 本项目当前最大的限制是Worker请求数，主要是vps上报数据的消耗，每日请求数可以用这个公式计算：vps数量 *（86400/上报频率），得到的数字再除以100000就是已消耗百分比。

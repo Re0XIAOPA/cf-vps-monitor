@@ -11407,20 +11407,33 @@ async function saveSite() {
     }
     document.getElementById('siteUrl').value = siteUrl;
 
-    const tcpPortPattern = /^[\\w.-]+:\\d{1,5}$/;
-    const domainPattern = /^[\\w-]+(\\.[\\w-]+)*\\.[a-zA-Z]{2,}$/;
-    const isTcpPort = tcpPortPattern.test(siteUrl);
-    const isDomain = domainPattern.test(siteUrl) && !siteUrl.includes('://') && !siteUrl.includes(':');
-    const isUrl = siteUrl.startsWith('http://') || siteUrl.startsWith('https://');
+    // 用简单的字符串判断代替正则，避免模板字面量转义问题
+    var isValidTcpOrDomain = false;
+    if (siteUrl.startsWith('http://') || siteUrl.startsWith('https://')) {
+        isValidTcpOrDomain = true;
+    } else {
+        var colonIdx = siteUrl.indexOf(':');
+        if (colonIdx > 0) {
+            var portStr = siteUrl.substring(colonIdx + 1);
+            if (portStr.length >= 1 && portStr.length <= 5) {
+                var portNum = parseInt(portStr, 10);
+                if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) {
+                    isValidTcpOrDomain = true;
+                }
+            }
+        } else if (siteUrl.indexOf('.') > 0) {
+            isValidTcpOrDomain = true;
+        }
+    }
 
-    if (!isTcpPort && !isDomain && !isUrl) {
+    if (!isValidTcpOrDomain) {
          showToast('warning', '请输入有效的地址：URL(http/https)、IP:端口、域名:端口 或 纯域名');
          return;
     }
 
-    if (isTcpPort) {
-        const port = parseInt(siteUrl.split(':')[1], 10);
-        if (port < 1 || port > 65535) {
+    if (colonIdx > 0 && !siteUrl.startsWith('http')) {
+        var portNum = parseInt(siteUrl.substring(colonIdx + 1), 10);
+        if (portNum < 1 || portNum > 65535) {
             showToast('warning', '端口号必须在 1-65535 之间');
             return;
         }
