@@ -1,5 +1,6 @@
 // VPS监控面板 - Cloudflare Worker解决方案
 // 版本: 1.1.0
+import { EmailMessage } from "cloudflare:email";
 // ==================== 配置常量 ====================
 
 // 获取管理员账户配置
