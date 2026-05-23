@@ -7,3 +7,7 @@ compatibility_date = "2026-05-21"
 binding = "DB"
 database_name = "cf-vps-monitor"
 database_id = "86e31b9d-c527-49ec-9c9e-5bc77e97b034"
+
+# Cloudflare Email Routing 发信绑定（纯免费，零第三方）
+[[send_email]]
+name = "noreply@blocktavern.cn"

@@ -2152,10 +2152,10 @@ async function handleApiRequest(request, env, ctx) {
       // 立即执行健康检查
       const newSiteForCheck = { id: siteId, url, name: name || '' };
       if (ctx?.waitUntil) {
-        ctx.waitUntil(checkWebsiteStatus(newSiteForCheck, env.DB, ctx));
+        ctx.waitUntil(checkWebsiteStatus(newSiteForCheck, env.DB, ctx, env));
 
       } else {
-        checkWebsiteStatus(newSiteForCheck, env.DB, ctx).catch(e => {
+        checkWebsiteStatus(newSiteForCheck, env.DB, ctx, env).catch(e => {
           // 静默处理站点检查错误
         });
       }
@@ -2898,6 +2898,7 @@ async function handleApiRequest(request, env, ctx) {
       }
 
       const testResult = await sendEmailNotification(
+        env,
         emailConfig.sender_email,
         emailConfig.receiver_email,
         'VPS监控面板 - 邮件通知测试',
@@ -3245,7 +3246,7 @@ async function checkTcpPort(url) {
   }
 }
 
-async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
+async function checkWebsiteStatus(site, db, ctx, env) { // Added ctx for waitUntil + env for email
   const { id, url, name } = site; // Added name
   const startTime = Date.now();
   let newStatus = 'PENDING'; // Renamed to newStatus to avoid conflict
@@ -3307,7 +3308,7 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
       const emailSubject = `🔴 ${targetLabel}故障告警 - ${siteDisplayName}`;
       const emailHtml = `<h2>🔴 ${targetLabel}故障告警</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-      ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml));
+      ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
@@ -3316,7 +3317,7 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
         const emailSubject = `🔴 ${targetLabel}持续故障 - ${siteDisplayName}`;
         const emailHtml = `<h2>🔴 ${targetLabel}持续故障</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-        ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml));
+        ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
@@ -3325,7 +3326,7 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
     const emailSubject = `✅ ${targetLabel}恢复通知 - ${siteDisplayName}`;
     const emailHtml = `<h2>✅ ${targetLabel}恢复通知</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-    ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml));
+    ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
     newSiteLastNotifiedDownAt = null;
   }
 
@@ -3359,7 +3360,7 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
 // ==================== 优化版本函数 ====================
 
 // 优化版网站状态检查 - 减少超时时间，使用缓存
-async function checkWebsiteStatusOptimized(site, db, ctx) {
+async function checkWebsiteStatusOptimized(site, db, ctx, env) {
   const { id, url, name } = site;
   const startTime = Date.now();
   let newStatus = 'PENDING';
@@ -3533,56 +3534,41 @@ async function sendTelegramNotificationOptimized(db, message, priority = 'normal
 
 // ==================== 邮件通知系统 ====================
 
-async function sendEmailNotification(senderEmail, receiverEmail, subject, htmlBody) {
+async function sendEmailNotification(env, senderEmail, receiverEmail, subject, htmlBody) {
   try {
-    const receivers = receiverEmail.split(',').map(function(e) { return e.trim(); }).filter(function(e) { return e; });
-    
+    if (!env || !env.EMAIL) {
+      return { success: false, error: 'send_email 绑定未配置，请在 wrangler.toml 中添加 [[send_email]] binding' };
+    }
+
+    var receivers = receiverEmail.split(',').map(function(e) { return e.trim(); }).filter(function(e) { return e; });
     if (!senderEmail || receivers.length === 0) {
       return { success: false, error: '邮件配置不完整' };
     }
 
-    var payload = {
-      personalizations: [{ to: receivers.map(function(e) { return { email: e }; }) }],
-      from: { email: senderEmail, name: 'VPS监控面板' },
-      subject: subject,
-      content: [{ type: 'text/html', value: htmlBody }]
-    };
+    var textBody = htmlBody.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim();
 
-    var response = await fetch('https://api.mailchannels.net/tx/v1/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    var responseStatus = response.status;
-    var responseText = await response.text();
-
-    if (responseStatus >= 200 && responseStatus < 300) {
-      return { success: true };
+    for (var i = 0; i < receivers.length; i++) {
+      var msg = new EmailMessage(
+        senderEmail,
+        receivers[i],
+        subject,
+        textBody,
+        htmlBody
+      );
+      await env.EMAIL.send(msg);
     }
 
-    var errorMsg = '邮件发送失败';
-    try {
-      var errJson = JSON.parse(responseText);
-      errorMsg = (errJson.errors && errJson.errors[0]) || errJson.message || errJson.error || responseText;
-    } catch(ignored) {
-      errorMsg = responseText.substring(0, 500);
-    }
-
-    if (responseStatus === 401 || responseStatus === 403) {
-      var domain = senderEmail.split('@')[1] || '';
-      errorMsg = '发件域名 ' + domain + ' 未授权(401)。确认: 1) DNS TXT _mailchannels 记录已全球生效 2) 发件邮箱域名必须与 DNS 记录所在域名一致 3) 区域ID正确(当前:' + domain + ')';
-    }
-
-    return { success: false, error: errorMsg };
+    return { success: true };
 
   } catch (error) {
     return { success: false, error: error.message };
   }
 }
 
-async function sendEmailNotificationOptimized(db, subject, htmlBody, priority) {
+async function sendEmailNotificationOptimized(db, subject, htmlBody, env) {
   try {
+    if (!env || !env.EMAIL) return;
+
     var emailConfig = await configCache.getEmailConfig(db);
 
     if (!emailConfig || !emailConfig.enable_notifications || !emailConfig.sender_email || !emailConfig.receiver_email) {
@@ -3590,6 +3576,7 @@ async function sendEmailNotificationOptimized(db, subject, htmlBody, priority) {
     }
 
     await sendEmailNotification(
+      env,
       emailConfig.sender_email,
       emailConfig.receiver_email,
       subject,
@@ -3678,7 +3665,7 @@ export default {
             const sitePromises = [];
 
             for (const site of sitesToCheck) {
-              sitePromises.push(checkWebsiteStatusOptimized(site, env.DB, ctx));
+              sitePromises.push(checkWebsiteStatusOptimized(site, env.DB, ctx, env));
               if (sitePromises.length >= siteConcurrencyLimit) {
                 await Promise.all(sitePromises);
                 sitePromises.length = 0;
@@ -5024,10 +5011,8 @@ function getAdminHtml() {
                     <form id="emailSettingsForm">
                         <div class="alert alert-info mb-3" role="alert">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>发件人邮箱</strong>必须使用你在 Cloudflare 上管理的域名（如 blocktavern.cn）。<br>
-                            发送邮件前需在 Cloudflare DNS 中添加一条 TXT 记录：
-                            <code>_mailchannels</code> → <code>v=mc1 cfid=你的区域ID</code>
-                            （区域ID在 Cloudflare 控制台右侧概览页可找到）
+                            <strong>前提条件：</strong>需要在 Cloudflare 控制台为你的域名<strong>开启 Email Routing</strong>，并在 wrangler.toml 中添加 <code>[[send_email]]</code> 绑定。<br>
+                            发件人邮箱必须使用你 Cloudflare 上管理域名的邮箱地址。
                         </div>
                         <div class="mb-3">
                             <label for="emailSender" class="form-label">发件人邮箱</label>
@@ -11404,8 +11389,8 @@ async function saveSite() {
     }
     document.getElementById('siteUrl').value = siteUrl;
 
-    const tcpPortPattern = /^[\w.-]+:\d{1,5}$/;
-    const domainPattern = /^[\w-]+(\.[\w-]+)*\.[a-zA-Z]{2,}$/;
+    const tcpPortPattern = /^[\\w.-]+:\\d{1,5}$/;
+    const domainPattern = /^[\\w-]+(\\.[\\w-]+)*\\.[a-zA-Z]{2,}$/;
     const isTcpPort = tcpPortPattern.test(siteUrl);
     const isDomain = domainPattern.test(siteUrl) && !siteUrl.includes('://') && !siteUrl.includes(':');
     const isUrl = siteUrl.startsWith('http://') || siteUrl.startsWith('https://');
