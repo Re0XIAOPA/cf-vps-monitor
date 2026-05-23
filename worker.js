@@ -3545,17 +3545,9 @@ async function sendEmailNotification(env, senderEmail, receiverEmail, subject, h
       return { success: false, error: '邮件配置不完整' };
     }
 
-    var textBody = htmlBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-
     for (var i = 0; i < receivers.length; i++) {
-      var msg = new EmailMessage(
-        senderEmail,
-        receivers[i],
-        subject,
-        textBody,
-        htmlBody
-      );
-      await env.EMAIL.send(msg);
+      var rawEmail = buildRawEmail(senderEmail, receivers[i], subject, htmlBody);
+      await env.EMAIL.send(rawEmail);
     }
 
     return { success: true };
@@ -3563,6 +3555,30 @@ async function sendEmailNotification(env, senderEmail, receiverEmail, subject, h
   } catch (error) {
     return { success: false, error: error.message };
   }
+}
+
+function buildRawEmail(from, to, subject, htmlBody) {
+  var textBody = htmlBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  var boundary = '----=_Boundary_' + Math.random().toString(36).substring(2);
+  var encodedSubject = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
+
+  return [
+    'From: ' + from,
+    'To: ' + to,
+    'Subject: ' + encodedSubject,
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/alternative; boundary="' + boundary + '"',
+    '',
+    '--' + boundary,
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    textBody,
+    '--' + boundary,
+    'Content-Type: text/html; charset=UTF-8',
+    '',
+    htmlBody,
+    '--' + boundary + '--'
+  ].join('\r\n');
 }
 
 async function sendEmailNotificationOptimized(db, subject, htmlBody, env) {
