@@ -3213,11 +3213,18 @@ async function handleApiRequest(request, env, ctx) {
 // 旧的VPS离线检查函数已移除，改为前端状态变化检测 + 定时提醒
 
 function isTcpPortUrl(url) {
-  return /^[\w.-]+:\d{1,5}$/.test(url);
+  if (typeof url !== 'string') return false;
+  var colonIdx = url.indexOf(':');
+  if (colonIdx <= 0 || url.startsWith('http')) return false;
+  var portStr = url.substring(colonIdx + 1);
+  if (portStr.length < 1 || portStr.length > 5) return false;
+  var portNum = parseInt(portStr, 10);
+  return !isNaN(portNum) && portNum >= 1 && portNum <= 65535;
 }
 
 function isPureDomainUrl(url) {
-  return /^[\w.-]+\.[a-zA-Z]{2,}$/.test(url) && !url.includes('://') && !url.includes(':');
+  if (typeof url !== 'string') return false;
+  return url.indexOf('.') > 0 && url.indexOf(':') === -1 && !url.startsWith('http://') && !url.startsWith('https://');
 }
 
 function getSiteUrlType(url) {
@@ -3718,14 +3725,18 @@ export default {
 
 // 监控地址验证（支持URL / IP:端口 / 域名:端口 / 纯域名）
 function isValidMonitorUrl(string) {
-  try {
-    var url = new URL(string);
-    return ['http:', 'https:'].indexOf(url.protocol) !== -1;
-  } catch (_) {}
   if (typeof string !== 'string' || !string.trim()) return false;
   var s = string.trim();
-  if (/^[\w.-]+:\d{1,5}$/.test(s)) return true;
-  if (/^[\w-]+(\.[\w-]+)*\.[a-zA-Z]{2,}$/.test(s) && s.indexOf(':') === -1) return true;
+  if (s.startsWith('http://') || s.startsWith('https://')) return true;
+  var colonIdx = s.indexOf(':');
+  if (colonIdx > 0 && !s.startsWith('http')) {
+    var portStr = s.substring(colonIdx + 1);
+    if (portStr.length >= 1 && portStr.length <= 5) {
+      var portNum = parseInt(portStr, 10);
+      if (!isNaN(portNum) && portNum >= 1 && portNum <= 65535) return true;
+    }
+  }
+  if (s.indexOf('.') > 0 && s.indexOf(':') === -1) return true;
   return false;
 }
 
