@@ -1664,6 +1664,11 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
         .bind(Math.floor(Date.now() / 1000), serverId).run();
       ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message, 'high'));
 
+      // 同时发送邮件通知
+      const emailSubject = `🔴 VPS故障告警 - ${serverName}`;
+      const emailHtml = `<h2>🔴 VPS故障告警</h2><p><strong>服务器名称:</strong> ${serverName}</p><p><strong>当前状态:</strong> <span style="color:red">离线</span></p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, emailSubject, emailHtml, env));
+
       return createApiResponse({ success: true }, 200, corsHeaders);
     } catch (error) {
             return createErrorResponse('Notification failed', '通知发送失败', 500, corsHeaders);
@@ -1681,6 +1686,11 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
 
       // 发送通知
       ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message, 'high'));
+
+      // 同时发送邮件通知
+      const emailSubject = `✅ VPS恢复通知 - ${serverName}`;
+      const emailHtml = `<h2>✅ VPS恢复通知</h2><p><strong>服务器名称:</strong> ${serverName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, emailSubject, emailHtml, env));
 
       return createApiResponse({ success: true }, 200, corsHeaders);
     } catch (error) {
@@ -3436,18 +3446,27 @@ async function checkWebsiteStatusOptimized(site, db, ctx, env) {
     if (isFirstTimeDown) {
       const message = `🔴 ${targetLabel}故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+      const emailSubject = `🔴 ${targetLabel}故障告警 - ${siteDisplayName}`;
+      const emailHtml = `<h2>🔴 ${targetLabel}故障告警</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+      ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
         const message = `🔴 ${targetLabel}持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+        const emailSubject = `🔴 ${targetLabel}持续故障 - ${siteDisplayName}`;
+        const emailHtml = `<h2>🔴 ${targetLabel}持续故障</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+        ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
     const message = `✅ ${targetLabel}恢复: *${siteDisplayName}* 已恢复在线!\n地址: ${url}`;
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+    const emailSubject = `✅ ${targetLabel}恢复通知 - ${siteDisplayName}`;
+    const emailHtml = `<h2>✅ ${targetLabel}恢复通知</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+    ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
     newSiteLastNotifiedDownAt = null;
   }
 
@@ -3502,6 +3521,10 @@ async function checkVpsOfflineReminder(env, ctx) {
 
       const message = `🔴 VPS持续离线: 服务器 *${serverDisplayName}* 已离线${offlineHours}小时（每小时提醒）`;
       ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message));
+
+      const emailSubject = `🔴 VPS持续离线 - ${serverDisplayName}`;
+      const emailHtml = `<h2>🔴 VPS持续离线提醒</h2><p><strong>服务器名称:</strong> ${serverDisplayName}</p><p><strong>离线时长:</strong> <span style="color:red">${offlineHours}小时</span></p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
+      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, emailSubject, emailHtml, env));
 
       // 更新最后通知时间
       ctx.waitUntil(env.DB.prepare('UPDATE servers SET last_notified_down_at = ? WHERE id = ?')
