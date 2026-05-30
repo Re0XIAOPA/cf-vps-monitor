@@ -179,7 +179,7 @@ class ConfigCache {
     if (cached) return cached;
 
     const config = await db.prepare(
-      'SELECT sender_email, receiver_email, enable_notifications FROM email_config WHERE id = 1'
+      'SELECT sender_email, receiver_email, enable_notifications, notify_language FROM email_config WHERE id = 1'
     ).first();
 
     if (config) {
@@ -904,9 +904,10 @@ const D1_SCHEMAS = {
       sender_password TEXT,
       receiver_email TEXT,
       enable_notifications INTEGER DEFAULT 0,
-      updated_at INTEGER
+      updated_at INTEGER,
+      notify_language TEXT DEFAULT 'zh-CN'
     );
-    INSERT OR IGNORE INTO email_config (id, smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications, updated_at) VALUES (1, NULL, 465, NULL, NULL, NULL, 0, NULL);`,
+    INSERT OR IGNORE INTO email_config (id, smtp_host, smtp_port, sender_email, sender_password, receiver_email, enable_notifications, updated_at, notify_language) VALUES (1, NULL, 465, NULL, NULL, NULL, 0, NULL, 'zh-CN');`,
 
   app_config: `
     CREATE TABLE IF NOT EXISTS app_config (
@@ -948,7 +949,8 @@ async function applySchemaAlterations(db) {
     "ALTER TABLE admin_credentials ADD COLUMN must_change_password INTEGER DEFAULT 0",
     "ALTER TABLE admin_credentials ADD COLUMN password_changed_at INTEGER DEFAULT NULL",
     "ALTER TABLE servers ADD COLUMN is_public INTEGER DEFAULT 1",
-    "ALTER TABLE monitored_sites ADD COLUMN is_public INTEGER DEFAULT 1"
+    "ALTER TABLE monitored_sites ADD COLUMN is_public INTEGER DEFAULT 1",
+    "ALTER TABLE email_config ADD COLUMN notify_language TEXT DEFAULT 'zh-CN'"
   ];
 
   for (const alterSql of alterStatements) {
@@ -1665,9 +1667,10 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
       ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message, 'high'));
 
       // 同时发送邮件通知
-      const emailSubject = `🔴 VPS故障告警 - ${serverName}`;
-      const emailHtml = `<h2>🔴 VPS故障告警</h2><p><strong>服务器名称:</strong> ${serverName}</p><p><strong>当前状态:</strong> <span style="color:red">离线</span></p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, emailSubject, emailHtml, env));
+      var vpsLang = await getNotifyLanguage(env.DB);
+      var vpsT = emailTemplates(vpsLang);
+      var vpsTime = new Date().toLocaleString('zh-CN');
+      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, vpsT.vpsDownSubject(serverName), vpsT.vpsDownHtml(serverName, vpsTime), env));
 
       return createApiResponse({ success: true }, 200, corsHeaders);
     } catch (error) {
@@ -1688,9 +1691,10 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
       ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message, 'high'));
 
       // 同时发送邮件通知
-      const emailSubject = `✅ VPS恢复通知 - ${serverName}`;
-      const emailHtml = `<h2>✅ VPS恢复通知</h2><p><strong>服务器名称:</strong> ${serverName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, emailSubject, emailHtml, env));
+      var vpsLang2 = await getNotifyLanguage(env.DB);
+      var vpsT2 = emailTemplates(vpsLang2);
+      var vpsTime2 = new Date().toLocaleString('zh-CN');
+      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, vpsT2.vpsRecoveredSubject(serverName), vpsT2.vpsRecoveredHtml(serverName, vpsTime2), env));
 
       return createApiResponse({ success: true }, 200, corsHeaders);
     } catch (error) {
@@ -2817,7 +2821,7 @@ async function handleApiRequest(request, env, ctx) {
       const settings = await configCache.getEmailConfig(env.DB);
 
       return new Response(JSON.stringify(
-        settings || { sender_email: null, receiver_email: null, enable_notifications: 0 }
+        settings || { sender_email: null, receiver_email: null, enable_notifications: 0, notify_language: 'zh-CN' }
       ), {
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
@@ -2828,7 +2832,8 @@ async function handleApiRequest(request, env, ctx) {
           return new Response(JSON.stringify({
             sender_email: null,
             receiver_email: null,
-            enable_notifications: 0
+            enable_notifications: 0,
+            notify_language: 'zh-CN'
           }), {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
@@ -2859,13 +2864,14 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     try {
-      const { sender_email, receiver_email, enable_notifications } = await request.json();
+      const { sender_email, receiver_email, enable_notifications, notify_language } = await request.json();
       const updatedAt = Math.floor(Date.now() / 1000);
       const enableNotifValue = (enable_notifications === true || enable_notifications === 1) ? 1 : 0;
+      const langValue = notify_language || 'zh-CN';
 
       await env.DB.prepare(`
-        UPDATE email_config SET sender_email = ?, receiver_email = ?, enable_notifications = ?, updated_at = ? WHERE id = 1
-      `).bind(sender_email || null, receiver_email || null, enableNotifValue, updatedAt).run();
+        UPDATE email_config SET sender_email = ?, receiver_email = ?, enable_notifications = ?, notify_language = ?, updated_at = ? WHERE id = 1
+      `).bind(sender_email || null, receiver_email || null, enableNotifValue, langValue, updatedAt).run();
 
       configCache.clearKey('email_config');
 
@@ -2912,8 +2918,8 @@ async function handleApiRequest(request, env, ctx) {
         env,
         emailConfig.sender_email,
         emailConfig.receiver_email,
-        'VPS监控面板 - 邮件通知测试',
-        '<h2>测试邮件</h2><p>邮件通知配置成功，可以正常发送邮件。</p>'
+        emailTemplates(emailConfig.notify_language || 'zh-CN').testSubject,
+        emailTemplates(emailConfig.notify_language || 'zh-CN').testHtml
       );
 
       if (testResult.success) {
@@ -3318,33 +3324,30 @@ async function checkWebsiteStatus(site, db, ctx, env) { // Added ctx for waitUnt
   const isTcpOrDomain = isTcpPortUrl(url) || isPureDomainUrl(url);
   const targetLabel = isTcpOrDomain ? '服务' : '网站';
   let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt;
+  var lang = await getNotifyLanguage(db);
+  var t = emailTemplates(lang);
+  var timeStr = new Date().toLocaleString('zh-CN');
 
   if (['DOWN', 'TIMEOUT', 'ERROR'].includes(newStatus)) {
     const isFirstTimeDown = !['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus);
     if (isFirstTimeDown) {
       const message = `🔴 ${targetLabel}故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-      const emailSubject = `🔴 ${targetLabel}故障告警 - ${siteDisplayName}`;
-      const emailHtml = `<h2>🔴 ${targetLabel}故障告警</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-      ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
+      ctx.waitUntil(sendEmailNotificationOptimized(db, t.downSubject(targetLabel, siteDisplayName), t.downHtml(targetLabel, siteDisplayName, newStatus, newStatusCode, url, timeStr), env));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
         const message = `🔴 ${targetLabel}持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-        const emailSubject = `🔴 ${targetLabel}持续故障 - ${siteDisplayName}`;
-        const emailHtml = `<h2>🔴 ${targetLabel}持续故障</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-        ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
+        ctx.waitUntil(sendEmailNotificationOptimized(db, t.stillDownSubject(targetLabel, siteDisplayName), t.stillDownHtml(targetLabel, siteDisplayName, newStatus, newStatusCode, url, timeStr), env));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
     const message = `✅ ${targetLabel}恢复: *${siteDisplayName}* 已恢复在线!\n地址: ${url}`;
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-    const emailSubject = `✅ ${targetLabel}恢复通知 - ${siteDisplayName}`;
-    const emailHtml = `<h2>✅ ${targetLabel}恢复通知</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-    ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
+    ctx.waitUntil(sendEmailNotificationOptimized(db, t.recoveredSubject(targetLabel, siteDisplayName), t.recoveredHtml(targetLabel, siteDisplayName, url, timeStr), env));
     newSiteLastNotifiedDownAt = null;
   }
 
@@ -3440,33 +3443,30 @@ async function checkWebsiteStatusOptimized(site, db, ctx, env) {
   const isTcpOrDomain = isTcpPortUrl(url) || isPureDomainUrl(url);
   const targetLabel = isTcpOrDomain ? '服务' : '网站';
   let newSiteLastNotifiedDownAt = siteLastNotifiedDownAt;
+  var lang = await getNotifyLanguage(db);
+  var t = emailTemplates(lang);
+  var timeStr = new Date().toLocaleString('zh-CN');
 
   if (['DOWN', 'TIMEOUT', 'ERROR'].includes(newStatus)) {
     const isFirstTimeDown = !['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus);
     if (isFirstTimeDown) {
       const message = `🔴 ${targetLabel}故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
       ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-      const emailSubject = `🔴 ${targetLabel}故障告警 - ${siteDisplayName}`;
-      const emailHtml = `<h2>🔴 ${targetLabel}故障告警</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-      ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
+      ctx.waitUntil(sendEmailNotificationOptimized(db, t.downSubject(targetLabel, siteDisplayName), t.downHtml(targetLabel, siteDisplayName, newStatus, newStatusCode, url, timeStr), env));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
         const message = `🔴 ${targetLabel}持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n地址: ${url}`;
         ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-        const emailSubject = `🔴 ${targetLabel}持续故障 - ${siteDisplayName}`;
-        const emailHtml = `<h2>🔴 ${targetLabel}持续故障</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>当前状态:</strong> <span style="color:red">${newStatus.toLowerCase()}</span></p><p><strong>状态码:</strong> ${newStatusCode || '无'}</p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-        ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
+        ctx.waitUntil(sendEmailNotificationOptimized(db, t.stillDownSubject(targetLabel, siteDisplayName), t.stillDownHtml(targetLabel, siteDisplayName, newStatus, newStatusCode, url, timeStr), env));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
     const message = `✅ ${targetLabel}恢复: *${siteDisplayName}* 已恢复在线!\n地址: ${url}`;
     ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
-    const emailSubject = `✅ ${targetLabel}恢复通知 - ${siteDisplayName}`;
-    const emailHtml = `<h2>✅ ${targetLabel}恢复通知</h2><p><strong>${targetLabel}名称:</strong> ${siteDisplayName}</p><p><strong>状态:</strong> <span style="color:green">已恢复在线</span></p><p><strong>地址:</strong> ${url}</p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-    ctx.waitUntil(sendEmailNotificationOptimized(db, emailSubject, emailHtml, env));
+    ctx.waitUntil(sendEmailNotificationOptimized(db, t.recoveredSubject(targetLabel, siteDisplayName), t.recoveredHtml(targetLabel, siteDisplayName, url, timeStr), env));
     newSiteLastNotifiedDownAt = null;
   }
 
@@ -3522,9 +3522,10 @@ async function checkVpsOfflineReminder(env, ctx) {
       const message = `🔴 VPS持续离线: 服务器 *${serverDisplayName}* 已离线${offlineHours}小时（每小时提醒）`;
       ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message));
 
-      const emailSubject = `🔴 VPS持续离线 - ${serverDisplayName}`;
-      const emailHtml = `<h2>🔴 VPS持续离线提醒</h2><p><strong>服务器名称:</strong> ${serverDisplayName}</p><p><strong>离线时长:</strong> <span style="color:red">${offlineHours}小时</span></p><p><strong>时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>`;
-      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, emailSubject, emailHtml, env));
+      var vpsStillLang = await getNotifyLanguage(env.DB);
+      var vpsStillT = emailTemplates(vpsStillLang);
+      var vpsStillTime = new Date().toLocaleString('zh-CN');
+      ctx.waitUntil(sendEmailNotificationOptimized(env.DB, vpsStillT.vpsStillDownSubject(serverDisplayName), vpsStillT.vpsStillDownHtml(serverDisplayName, offlineHours, vpsStillTime), env));
 
       // 更新最后通知时间
       ctx.waitUntil(env.DB.prepare('UPDATE servers SET last_notified_down_at = ? WHERE id = ?')
@@ -3633,6 +3634,16 @@ async function sendEmailNotificationOptimized(db, subject, htmlBody, env) {
 
   } catch (error) {
     // 静默处理邮件通知错误
+  }
+}
+
+// 获取通知语言
+async function getNotifyLanguage(db) {
+  try {
+    var cfg = await configCache.getEmailConfig(db);
+    return (cfg && cfg.notify_language) ? cfg.notify_language : 'zh-CN';
+  } catch (e) {
+    return 'zh-CN';
   }
 }
 
@@ -3745,6 +3756,124 @@ export default {
 
 
 // ==================== 工具函数 ====================
+
+// 状态中英文转换
+function statusText(status, lang) {
+  if (!lang || lang === 'zh-CN') {
+    var map = { DOWN: '故障', TIMEOUT: '超时', ERROR: '错误', UP: '在线', PENDING: '检测中' };
+    return map[status] || status;
+  }
+  return status; // 英文直接用原始值
+}
+
+// 邮件多语言模板
+function emailTemplates(lang) {
+  if (lang === 'en') {
+    return {
+      testSubject: 'VPS Monitor - Email Test',
+      testHtml: '<h2>Test Email</h2><p>Email notification is configured correctly and working.</p>',
+      downSubject: function(targetLabel, name) { return '\u{1F534} ' + targetLabel + ' Down Alert - ' + name; },
+      downHtml: function(targetLabel, name, status, statusCode, url, time) {
+        return '<h2>\u{1F534} ' + targetLabel + ' Down Alert</h2>' +
+          '<p><strong>' + targetLabel + ' Name:</strong> ' + name + '</p>' +
+          '<p><strong>Status:</strong> <span style="color:red">' + statusText(status, 'en') + '</span></p>' +
+          '<p><strong>Status Code:</strong> ' + (statusCode || 'N/A') + '</p>' +
+          '<p><strong>Address:</strong> ' + url + '</p>' +
+          '<p><strong>Time:</strong> ' + time + '</p>';
+      },
+      stillDownSubject: function(targetLabel, name) { return '\u{1F534} ' + targetLabel + ' Still Down - ' + name; },
+      stillDownHtml: function(targetLabel, name, status, statusCode, url, time) {
+        return '<h2>\u{1F534} ' + targetLabel + ' Still Down</h2>' +
+          '<p><strong>' + targetLabel + ' Name:</strong> ' + name + '</p>' +
+          '<p><strong>Status:</strong> <span style="color:red">' + statusText(status, 'en') + '</span></p>' +
+          '<p><strong>Status Code:</strong> ' + (statusCode || 'N/A') + '</p>' +
+          '<p><strong>Address:</strong> ' + url + '</p>' +
+          '<p><strong>Time:</strong> ' + time + '</p>';
+      },
+      recoveredSubject: function(targetLabel, name) { return '\u2705 ' + targetLabel + ' Recovered - ' + name; },
+      recoveredHtml: function(targetLabel, name, url, time) {
+        return '<h2>\u2705 ' + targetLabel + ' Recovered</h2>' +
+          '<p><strong>' + targetLabel + ' Name:</strong> ' + name + '</p>' +
+          '<p><strong>Status:</strong> <span style="color:green">Back Online</span></p>' +
+          '<p><strong>Address:</strong> ' + url + '</p>' +
+          '<p><strong>Time:</strong> ' + time + '</p>';
+      },
+      vpsDownSubject: function(name) { return '\u{1F534} VPS Down Alert - ' + name; },
+      vpsDownHtml: function(name, time) {
+        return '<h2>\u{1F534} VPS Down Alert</h2>' +
+          '<p><strong>Server Name:</strong> ' + name + '</p>' +
+          '<p><strong>Status:</strong> <span style="color:red">Offline</span></p>' +
+          '<p><strong>Time:</strong> ' + time + '</p>';
+      },
+      vpsRecoveredSubject: function(name) { return '\u2705 VPS Recovered - ' + name; },
+      vpsRecoveredHtml: function(name, time) {
+        return '<h2>\u2705 VPS Recovered</h2>' +
+          '<p><strong>Server Name:</strong> ' + name + '</p>' +
+          '<p><strong>Status:</strong> <span style="color:green">Back Online</span></p>' +
+          '<p><strong>Time:</strong> ' + time + '</p>';
+      },
+      vpsStillDownSubject: function(name) { return '\u{1F534} VPS Still Offline - ' + name; },
+      vpsStillDownHtml: function(name, hours, time) {
+        return '<h2>\u{1F534} VPS Still Offline</h2>' +
+          '<p><strong>Server Name:</strong> ' + name + '</p>' +
+          '<p><strong>Offline Duration:</strong> <span style="color:red">' + hours + ' hours</span></p>' +
+          '<p><strong>Time:</strong> ' + time + '</p>';
+      }
+    };
+  }
+  // 默认中文
+  return {
+    testSubject: 'VPS监控面板 - 邮件通知测试',
+    testHtml: '<h2>测试邮件</h2><p>邮件通知配置成功，可以正常发送邮件。</p>',
+    downSubject: function(targetLabel, name) { return '\u{1F534} ' + targetLabel + '\u6545\u969C\u544A\u8B66 - ' + name; },
+    downHtml: function(targetLabel, name, status, statusCode, url, time) {
+      return '<h2>\u{1F534} ' + targetLabel + '\u6545\u969C\u544A\u8B66</h2>' +
+        '<p><strong>' + targetLabel + '\u540D\u79F0:</strong> ' + name + '</p>' +
+        '<p><strong>\u5F53\u524D\u72B6\u6001:</strong> <span style="color:red">' + statusText(status, 'zh-CN') + '</span></p>' +
+        '<p><strong>\u72B6\u6001\u7801:</strong> ' + (statusCode || '\u65E0') + '</p>' +
+        '<p><strong>\u5730\u5740:</strong> ' + url + '</p>' +
+        '<p><strong>\u65F6\u95F4:</strong> ' + time + '</p>';
+    },
+    stillDownSubject: function(targetLabel, name) { return '\u{1F534} ' + targetLabel + '\u6301\u7EED\u6545\u969C - ' + name; },
+    stillDownHtml: function(targetLabel, name, status, statusCode, url, time) {
+      return '<h2>\u{1F534} ' + targetLabel + '\u6301\u7EED\u6545\u969C</h2>' +
+        '<p><strong>' + targetLabel + '\u540D\u79F0:</strong> ' + name + '</p>' +
+        '<p><strong>\u5F53\u524D\u72B6\u6001:</strong> <span style="color:red">' + statusText(status, 'zh-CN') + '</span></p>' +
+        '<p><strong>\u72B6\u6001\u7801:</strong> ' + (statusCode || '\u65E0') + '</p>' +
+        '<p><strong>\u5730\u5740:</strong> ' + url + '</p>' +
+        '<p><strong>\u65F6\u95F4:</strong> ' + time + '</p>';
+    },
+    recoveredSubject: function(targetLabel, name) { return '\u2705 ' + targetLabel + '\u6062\u590D\u901A\u77E5 - ' + name; },
+    recoveredHtml: function(targetLabel, name, url, time) {
+      return '<h2>\u2705 ' + targetLabel + '\u6062\u590D\u901A\u77E5</h2>' +
+        '<p><strong>' + targetLabel + '\u540D\u79F0:</strong> ' + name + '</p>' +
+        '<p><strong>\u72B6\u6001:</strong> <span style="color:green">\u5DF2\u6062\u590D\u5728\u7EBF</span></p>' +
+        '<p><strong>\u5730\u5740:</strong> ' + url + '</p>' +
+        '<p><strong>\u65F6\u95F4:</strong> ' + time + '</p>';
+    },
+    vpsDownSubject: function(name) { return '\u{1F534} VPS\u6545\u969C\u544A\u8B66 - ' + name; },
+    vpsDownHtml: function(name, time) {
+      return '<h2>\u{1F534} VPS\u6545\u969C\u544A\u8B66</h2>' +
+        '<p><strong>\u670D\u52A1\u5668\u540D\u79F0:</strong> ' + name + '</p>' +
+        '<p><strong>\u5F53\u524D\u72B6\u6001:</strong> <span style="color:red">\u79BB\u7EBF</span></p>' +
+        '<p><strong>\u65F6\u95F4:</strong> ' + time + '</p>';
+    },
+    vpsRecoveredSubject: function(name) { return '\u2705 VPS\u6062\u590D\u901A\u77E5 - ' + name; },
+    vpsRecoveredHtml: function(name, time) {
+      return '<h2>\u2705 VPS\u6062\u590D\u901A\u77E5</h2>' +
+        '<p><strong>\u670D\u52A1\u5668\u540D\u79F0:</strong> ' + name + '</p>' +
+        '<p><strong>\u72B6\u6001:</strong> <span style="color:green">\u5DF2\u6062\u590D\u5728\u7EBF</span></p>' +
+        '<p><strong>\u65F6\u95F4:</strong> ' + time + '</p>';
+    },
+    vpsStillDownSubject: function(name) { return '\u{1F534} VPS\u6301\u7EED\u79BB\u7EBF - ' + name; },
+    vpsStillDownHtml: function(name, hours, time) {
+      return '<h2>\u{1F534} VPS\u6301\u7EED\u79BB\u7EBF\u63D0\u9192</h2>' +
+        '<p><strong>\u670D\u52A1\u5668\u540D\u79F0:</strong> ' + name + '</p>' +
+        '<p><strong>\u79BB\u7EBF\u65F6\u957F:</strong> <span style="color:red">' + hours + '\u5C0F\u65F6</span></p>' +
+        '<p><strong>\u65F6\u95F4:</strong> ' + time + '</p>';
+    }
+  };
+}
 
 // 监控地址验证（支持URL / IP:端口 / 域名:端口 / 纯域名）
 function isValidMonitorUrl(string) {
@@ -5075,6 +5204,14 @@ function getAdminHtml() {
                             <label for="emailReceiver" class="form-label">收件人邮箱</label>
                             <input type="text" class="form-control" id="emailReceiver" placeholder="例如: 2762832501@qq.com">
                             <div class="form-text">多个收件人用英文逗号分隔</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notifyLanguage" class="form-label">通知语言</label>
+                            <select class="form-select" id="notifyLanguage">
+                                <option value="zh-CN">中文</option>
+                                <option value="en">English</option>
+                            </select>
+                            <div class="form-text">邮件通知使用的语言</div>
                         </div>
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="enableEmailNotifications">
@@ -11763,6 +11900,7 @@ async function loadEmailSettings() {
             document.getElementById('emailSender').value = settings.sender_email || '';
             document.getElementById('emailReceiver').value = settings.receiver_email || '';
             document.getElementById('enableEmailNotifications').checked = !!settings.enable_notifications;
+            document.getElementById('notifyLanguage').value = settings.notify_language || 'zh-CN';
         }
     } catch (error) {
                 showToast('danger', '加载邮件设置失败: ' + error.message);
@@ -11772,6 +11910,7 @@ async function loadEmailSettings() {
 async function saveEmailSettings() {
     const senderEmail = document.getElementById('emailSender').value.trim();
     const receiverEmail = document.getElementById('emailReceiver').value.trim();
+    const notifyLanguage = document.getElementById('notifyLanguage').value;
     let enableNotifications = document.getElementById('enableEmailNotifications').checked;
 
     if (!senderEmail || !receiverEmail) {
@@ -11786,7 +11925,8 @@ async function saveEmailSettings() {
             body: JSON.stringify({
                 sender_email: senderEmail,
                 receiver_email: receiverEmail,
-                enable_notifications: enableNotifications
+                enable_notifications: enableNotifications,
+                notify_language: notifyLanguage
             })
         });
 
