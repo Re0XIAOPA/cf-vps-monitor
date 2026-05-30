@@ -179,7 +179,7 @@ class ConfigCache {
     if (cached) return cached;
 
     const config = await db.prepare(
-      'SELECT sender_email, receiver_email, enable_notifications, notify_language FROM email_config WHERE id = 1'
+      'SELECT sender_email, receiver_email, enable_notifications, COALESCE(notify_language, \'zh-CN\') as notify_language FROM email_config WHERE id = 1'
     ).first();
 
     if (config) {
@@ -2818,6 +2818,9 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     try {
+      await env.DB.exec("ALTER TABLE email_config ADD COLUMN notify_language TEXT DEFAULT 'zh-CN'").catch(function(){});
+    } catch(ignored) {}
+    try {
       const settings = await configCache.getEmailConfig(env.DB);
 
       return new Response(JSON.stringify(
@@ -2864,6 +2867,9 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     try {
+      await env.DB.exec("ALTER TABLE email_config ADD COLUMN notify_language TEXT DEFAULT 'zh-CN'").catch(function(){});
+    } catch(ignored) {}
+    try {
       const { sender_email, receiver_email, enable_notifications, notify_language } = await request.json();
       const updatedAt = Math.floor(Date.now() / 1000);
       const enableNotifValue = (enable_notifications === true || enable_notifications === 1) ? 1 : 0;
@@ -2902,6 +2908,9 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
+    try {
+      await env.DB.exec("ALTER TABLE email_config ADD COLUMN notify_language TEXT DEFAULT 'zh-CN'").catch(function(){});
+    } catch(ignored) {}
     try {
       const emailConfig = await configCache.getEmailConfig(env.DB);
       if (!emailConfig?.sender_email || !emailConfig?.receiver_email) {
